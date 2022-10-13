@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <experimental/filesystem>
 #include <map>
+#include <stdexcept>      // std::out_of_range
 
 using namespace std;
 const string scaff_gap = "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN";
@@ -94,7 +95,20 @@ int main (int argc, char* argv[]){
 				sens = contig_complete[0];
 				contig = contig_complete.substr(1);
 				cout << sens <<" "<< contig << endl;
-				ctg_seq = contigs.at(contig);
+        try {
+          ctg_seq = contigs.at(contig);
+        }
+        catch (const std::out_of_range& oor) {
+          std::cerr << "Cannot find contig '" << contig << "'.\nContigs should be in (first ten)";
+          unsigned int i = 0;
+          for (auto &c: contigs) {
+            std::cerr << " '" << c.first << "'";
+            ++i;
+            if (i >= 10) break;
+          }
+          std::cerr << "...\nExiting now.\n";
+          return 1;
+        }
 
 				if(scaff_seq.length() > 0){
 
