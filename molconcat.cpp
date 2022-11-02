@@ -65,9 +65,6 @@ vector<Contig> create_contigs(string contigFile){
 
   }
 
-  //Contig contig("xxxx", ctg, pos_beg, pos_end);
-  //list_contigs.push_back(contig);
-
   return list_contigs;
 }
 
@@ -92,59 +89,51 @@ void add_molecules_to_contigs_extremites(vector<Contig> &nodes_list, string mole
     stringstream  splitstream(molecule_line);
     splitstream >> contig >> beg_pos >> end_pos >> barcode >> noReads;
 
-    //if(noReads >= 2) {
 
-        if ( ( (beg_pos >= split_ctg1_end) && (contig.compare(nodes_list[split_contig_count].origin) == 0)) ||
+    if ( ( (beg_pos >= split_ctg1_end) && (contig.compare(nodes_list[split_contig_count].origin) == 0)) ||
             (contig.compare(nodes_list[split_contig_count].origin) > 0)){ //we reached the end of ctg1
 
-          split_contig_count +=1;
+        split_contig_count +=1;
 
-          split_ctg1_beg = nodes_list[split_contig_count].pos_beg;
-          split_ctg1_end = nodes_list[split_contig_count].pos_end;
-          length_ctg1 = split_ctg1_end - split_ctg1_beg;
+        split_ctg1_beg = nodes_list[split_contig_count].pos_beg;
+        split_ctg1_end = nodes_list[split_contig_count].pos_end;
+        length_ctg1 = split_ctg1_end - split_ctg1_beg;
 
-          split_ctg2_beg = nodes_list[split_contig_count+1].pos_beg;
-          split_ctg2_end = nodes_list[split_contig_count+1].pos_end;
-          length_ctg2 = split_ctg2_end - split_ctg2_beg;
+        split_ctg2_beg = nodes_list[split_contig_count+1].pos_beg;
+        split_ctg2_end = nodes_list[split_contig_count+1].pos_end;
+        length_ctg2 = split_ctg2_end - split_ctg2_beg;
 
+    }
+
+    if ( ( beg_pos >=  split_ctg1_beg ) && ( beg_pos <=  split_ctg1_beg + min(window,length_ctg1/2) ) &&
+            ( end_pos <= split_ctg1_beg + length_ctg1*0.6 ) ) { //condition begining
+
+        nodes_list[split_contig_count].add_beg_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
+
+    }else if ( ( beg_pos >=  split_ctg1_beg + length_ctg1*0.4 )  && ( beg_pos <=  split_ctg1_end - pair_reads_length ) &&
+            ( end_pos >=  split_ctg1_end - min(window,length_ctg1/2) )){//condition end
+
+
+        if (contig.compare(nodes_list[split_contig_count+1].origin) != 0){ //ctg1 and ctg2 not the split of the same ctg
+
+            nodes_list[split_contig_count].add_end_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
+
+        }else if(end_pos <= split_ctg2_beg +length_ctg2*0.6){
+
+            nodes_list[split_contig_count].add_end_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
+
+            if (end_pos >= split_ctg2_beg + pair_reads_length) { //condition begining of ctg2
+
+                nodes_list[split_contig_count+1].add_beg_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
+
+            }
         }
 
-        if ( ( beg_pos >=  split_ctg1_beg ) && ( beg_pos <=  split_ctg1_beg + min(window,length_ctg1/2) ) &&
-             ( end_pos <= split_ctg1_beg + length_ctg1*0.6 ) ) { //condition begining
-
-          nodes_list[split_contig_count].add_beg_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
-
-        }else if ( ( beg_pos >=  split_ctg1_beg + length_ctg1*0.4 )  && ( beg_pos <=  split_ctg1_end - pair_reads_length ) &&
-                   ( end_pos >=  split_ctg1_end - min(window,length_ctg1/2) )){//condition end
-
-
-              if (contig.compare(nodes_list[split_contig_count+1].origin) != 0){ //ctg1 and ctg2 not the split of the same ctg
-
-                nodes_list[split_contig_count].add_end_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
-
-              }else if(end_pos <= split_ctg2_beg +length_ctg2*0.6){
-
-                nodes_list[split_contig_count].add_end_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
-
-                      if (end_pos >= split_ctg2_beg + pair_reads_length) { //condition begining of ctg2
-
-                            nodes_list[split_contig_count+1].add_beg_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
-
-                      }
-               }
-
-          } /*else if (length_ctg1 > 200000){ //for short contigs we consider middle molecules also
-
-            nodes_list[split_contig_count].add_mid_molecule(Molecule(beg_pos,end_pos,barcode,noReads));
-
-          }*/
-    //}//end if correct molecule
+    }
 
   }//end while read molecules
 
   for(int i=0; i<nodes_list.size();i++){
-    //nodes_list[i].sort_barcodes();
-
     sort(nodes_list[i].barcodes_beg.begin(), nodes_list[i].barcodes_beg.end());
     sort(nodes_list[i].barcodes_end.begin(), nodes_list[i].barcodes_end.end());
   }
@@ -160,55 +149,6 @@ void create_nodes(vector<Contig> ctg_list, vector<string>& nodes){
   }
 
 }
-
-/*void create_arcs(vector<Contig> ctg_list, vector<pair<string, string>>& arcs, int condition){
-
-  for(int i=0; i < ctg_list.size(); i++){
-     arcs.push_back(pair<string, string>(ctg_list[i].name+":begin",ctg_list[i].name+":end"));
-  }
-
-  cout << "normal arcs: "<<arcs.size()<<endl;
-
-  int diffCtgArc = 0;
-
-  for(int i=0; i < ctg_list.size()-1; i++){
-
-    for (int j = i; j < ctg_list.size(); j++){
-
-      vector<int> connections = ctg_list[i].isNeighbour(ctg_list[j], condition);
-
-      if(i==j) {
-        connections[0] = 0;
-        connections[3] = 0;
-      }
-
-      if(connections[0])  {
-        arcs.push_back(pair<string, string>(ctg_list[i].name+":begin",ctg_list[j].name+":begin"));//bb
-        if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
-      }
-      if(connections[1]) {
-        arcs.push_back(pair<string, string>(ctg_list[i].name+":begin",ctg_list[j].name+":end"));//be
-        if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
-      }
-
-      if(connections[2]) {
-        arcs.push_back(pair<string, string>(ctg_list[i].name+":end",ctg_list[j].name+":begin"));//eb
-        if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
-      }
-      if(connections[3]) {
-        arcs.push_back(pair<string, string>(ctg_list[i].name+":end",ctg_list[j].name+":end"));//ee
-        if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
-      }
-
-
-    }
-
-    cout<< "progess:" << i<< " "<<arcs.size()<<endl;
-  }
-
-  cout << "Number of arcs between different original contigs: "<< diffCtgArc <<endl;
-
-}*/
 
 
 void create_arcs_with_size(vector<Contig> ctg_list, vector<pair<string, string>>& arcs, vector<int>& weight, int condition){
@@ -318,55 +258,6 @@ void write_graph(vector<Contig> contigs_list, vector<pair<string, string>> arcs_
 
 }
 
-
-/* Method for adding new contig in a scaffold
-
-   int try_next_neighbor( string contig_extremity){
-     typename graph_traits<UndirectedGraph>::adjacency_iterator vi, vi_end;
-
-          for (boost::tie(vi, vi_end) = adjacent_vertices(nodes_list_int.at(contigs_list[i].name+":end"), undigraph); vi != vi_end; ++vi){
-
-            if(!visited[*vi]){
-
-                degree1 = out_degree(*vi,undigraph);
-
-                if (degree1 == 2){
-                  string node_sens = nodes_list_string.at(*vi);
-                  string contig_name = node_sens.substr(0,node_sens.length()-4);
-                  string sens = node_sens.substr(7,3);
-
-                  if(sens.compare("beg")==0){
-
-                    degree2 = out_degree(nodes_list_int.at(contig_name+":end"), undigraph);
-                    sign = '+';
-
-                  }else{
-
-                    degree2 = out_degree(nodes_list_int.at(contig_name+":beg"), undigraph);
-                    sign = '-';
-
-                  }
-
-                  if (degree2 == 2){
-
-                    scaffold.push_back(contig_name);
-                    signs.push_back(sign);
-                    visited[nodes_list_int.at(contig_name+":beg")] = true;
-                    visited[nodes_list_int.at(contig_name+":end")] = true;
-
-                  }
-                }
-
-
-
-            }
-
-          }
-
-      }
-
-
-  */
 
 char opposing_sign(char sign){
 

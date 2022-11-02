@@ -101,23 +101,8 @@ int intersectMoleculesSize(vector<string> v1, vector<string> v2, int condition){
         break;
     }
 
+    return 0;
 }
-
-/*vector<int> Contig::isNeighbour(Contig ctg, int condition){
-
-    vector<int> arcs;
-    for(int i=0;i<4;i++){
-        arcs.push_back(0);
-    } // values: "bb", "be", "eb", "ee"
-
-    if(intersectMolecules(barcodes_beg,ctg.barcodes_beg, condition)) arcs[0] = 1;
-    if(intersectMolecules(barcodes_beg,ctg.barcodes_end, condition)) arcs[1] = 1;
-    if(intersectMolecules(barcodes_end,ctg.barcodes_beg, condition)) arcs[2] = 1;
-    if(intersectMolecules(barcodes_end,ctg.barcodes_end, condition)) arcs[3] = 1;
-
-
-    return arcs;
-}*/
 
 vector<int> Contig::isNeighbourSize(Contig ctg, int condition){
 
@@ -138,38 +123,6 @@ vector<int> Contig::isNeighbourSize(Contig ctg, int condition){
             cout << "test arc:"<< name <<"\t"<< ctg.name<<"\t"<<arcs[i]<<endl;
         }	
     }
-
-    /* add mid molecules if short contig => no longer necessary
-    if((arcs[0]<5)&&(arcs[1]<5)&&(arcs[2]<5)&&(arcs[3]<5)) {
-         
-        int length_ctg1 = pos_end - pos_beg;
-        int length_ctg2 = ctg.pos_end - ctg.pos_beg;
-
-        if (length_ctg1 < 200000){ //&& (length_ctg2 >= 200000)){
-
-            int mid_beg = intersectMoleculesSize(barcodes_mid,ctg.barcodes_beg);
-            int mid_end = intersectMoleculesSize(barcodes_mid,ctg.barcodes_end);
-            arcs[0] += mid_beg;
-            arcs[1] += mid_end;
-            arcs[2] += mid_beg;
-            arcs[3] += mid_end;
-
-        }
-
-        if (length_ctg2 < 200000){ //&& (length_ctg1 >= 200000)){
-
-            int beg_mid = intersectMoleculesSize(barcodes_beg,ctg.barcodes_mid);
-            int end_mid = intersectMoleculesSize(barcodes_end,ctg.barcodes_mid);
-            arcs[0] += beg_mid;
-            arcs[1] += beg_mid;
-            arcs[2] += end_mid;
-            arcs[3] += end_mid;
-
-        }
-
-    } */
-        
-
 
     return arcs;
 }
