@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Contig::Contig(string ctg_split_name, string ctg_orig, int ctg_orig_pos_beg, int ctg_orig_pos_end){
+Contig::Contig(string &ctg_split_name, string &ctg_orig, int ctg_orig_pos_beg, int ctg_orig_pos_end){
 
     name = ctg_split_name;
     origin = ctg_orig;
@@ -16,21 +16,21 @@ Contig::Contig(string ctg_split_name, string ctg_orig, int ctg_orig_pos_beg, int
 
 }
 
-void Contig::add_beg_molecule(Molecule mol){
+void Contig::add_beg_molecule(Molecule &mol){
 
     molecules_beg.push_back(mol);
     barcodes_beg.push_back(mol.barcode);
    
 }
 
-void Contig::add_mid_molecule(Molecule mol){
+void Contig::add_mid_molecule(Molecule &mol){
 
     molecules_mid.push_back(mol);
     barcodes_mid.push_back(mol.barcode);
     
 }
 
-void Contig::add_end_molecule(Molecule mol){
+void Contig::add_end_molecule(Molecule &mol){
 
     molecules_end.push_back(mol);
     barcodes_end.push_back(mol.barcode);
@@ -48,7 +48,7 @@ void Contig::sort_barcodes(){
 
 }
 
-int intersectMoleculesSize(vector<string> v1, vector<string> v2, int condition){
+int intersectMoleculesSize(vector<string> &v1, vector<string> &v2, int condition){
 
 
     vector<string> commun_molecules;
@@ -104,7 +104,7 @@ int intersectMoleculesSize(vector<string> v1, vector<string> v2, int condition){
     return 0;
 }
 
-vector<int> Contig::isNeighbourSize(Contig ctg, int condition){
+vector<int> Contig::isNeighbourSize(Contig &ctg, int condition){
 
     vector<int> arcs;
     for(int i=0;i<4;i++){

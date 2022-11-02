@@ -24,14 +24,14 @@ class Contig
     vector<string> barcodes_mid;
     vector<string> barcodes_end;
 
-    Contig(string name, string origin, int pos_beg, int pos_end);
+    Contig(string &name, string &origin, int pos_beg, int pos_end);
 
-    void add_beg_molecule(Molecule mol);
-    void add_mid_molecule(Molecule mol);
-    void add_end_molecule(Molecule mol);
+    void add_beg_molecule(Molecule &mol);
+    void add_mid_molecule(Molecule &mol);
+    void add_end_molecule(Molecule &mol);
     void sort_barcodes();
     
-    vector<int> isNeighbourSize(Contig ctg, int condition);
+    vector<int> isNeighbourSize(Contig &ctg, int condition);
 
 };
 
