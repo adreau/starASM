@@ -104,12 +104,10 @@ int intersectMoleculesSize(vector<string> &v1, vector<string> &v2, int condition
     return 0;
 }
 
-vector<int> Contig::isNeighbourSize(Contig &ctg, int condition){
+void Contig::isNeighbourSize(Contig &ctg, int condition, vector<int> &arcs){
 
-    vector<int> arcs;
-    for(int i=0;i<4;i++){
-        arcs.push_back(0);
-    } // values: "bb", "be", "eb", "ee"
+    arcs = vector < int > (4);
+    // values: "bb", "be", "eb", "ee"
 
     arcs[0] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_beg, condition);
     arcs[1] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_end, condition);
@@ -123,6 +121,4 @@ vector<int> Contig::isNeighbourSize(Contig &ctg, int condition){
             cout << "test arc:"<< name <<"\t"<< ctg.name<<"\t"<<arcs[i]<<endl;
         }	
     }
-
-    return arcs;
 }

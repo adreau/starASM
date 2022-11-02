@@ -18,7 +18,7 @@ class Molecule {
 
   int getBeginPos();
   int getEndPos();
-  string getBarcode();
+  string &getBarcode();
   int getReadsNumber();
 
 

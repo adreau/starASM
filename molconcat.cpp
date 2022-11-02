@@ -41,13 +41,11 @@ static void show_usage(char *name)
 
 }
 
-vector<Contig> create_contigs(string &contigFile){
+void create_contigs(string &contigFile, vector<Contig> &list_contigs){
 
     ifstream contig_bed(contigFile.c_str());
     string contig_line, ctg, ctg_name;
     int pos_beg, pos_end;
-
-    vector<Contig> list_contigs;
 
     while(getline(contig_bed,contig_line)){
 
@@ -64,8 +62,6 @@ vector<Contig> create_contigs(string &contigFile){
         list_contigs.push_back(contig);
 
     }
-
-    return list_contigs;
 }
 
 void add_molecules_to_contigs_extremites(vector<Contig> &nodes_list, string &molecule_file, int window){
@@ -167,7 +163,8 @@ void create_arcs_with_size(vector<Contig> &ctg_list, vector<pair<string, string>
 
         for (int j = i; j < ctg_list.size(); j++){
 
-            vector<int> connections = ctg_list[i].isNeighbourSize(ctg_list[j], condition);
+            vector<int> connections;
+            ctg_list[i].isNeighbourSize(ctg_list[j], condition, connections);
 
             if(i==j) { //if the same extremity of a contig do not add arc
                 connections[0] = 0;
@@ -280,9 +277,7 @@ void print_scaffold( vector<string> &scaffold, vector<char> &signs, ofstream &sc
     scaffoldFile <<"\n";
 }
 
-vector<int> getNotVistedNeighbors(int ctg_beg_int , UndirectedGraph &undigraph, vector<bool> &visited){
-
-    vector<int> neighbors;
+void getNotVistedNeighbors(int ctg_beg_int , UndirectedGraph &undigraph, vector<bool> &visited, vector < int > &neighbors){
 
     typename graph_traits<UndirectedGraph>::adjacency_iterator vi, vi_end;
 
@@ -294,15 +289,13 @@ vector<int> getNotVistedNeighbors(int ctg_beg_int , UndirectedGraph &undigraph, 
 
     }
 
-    return neighbors;
-
-
 }
 
 bool extendScaffold (int & nextNode, vector<string> & scaffold, vector<char> &signs, UndirectedGraph &undigraph, vector<bool> &visited,
         map<int,string> &nodes_list_string,   map<string,int> &nodes_list_int){
 
-    vector<int> neighbors = getNotVistedNeighbors(nextNode , undigraph, visited);
+    vector<int> neighbors;
+    getNotVistedNeighbors(nextNode, undigraph, visited, neighbors);
 
     cout <<"Neighbors of the next node:" << neighbors.size() <<endl;
 
@@ -346,7 +339,7 @@ bool extendScaffold (int & nextNode, vector<string> & scaffold, vector<char> &si
         int otherExtemity = neighbors[0];
         visited[nextNode] = true; //we start visiting but not yet sure if both extremities are ok
 
-        neighbors = getNotVistedNeighbors(otherExtemity , undigraph, visited);
+        getNotVistedNeighbors(otherExtemity , undigraph, visited, neighbors);
 
 
         if(neighbors.size() <= 1){ //we include the contig in the scaffold
@@ -423,7 +416,8 @@ int main (int argc, char* argv[])
         }
     }
 
-    vector<Contig> contigs_list = create_contigs(contigFile);
+    vector<Contig> contigs_list;
+    create_contigs(contigFile, contigs_list);
 
 
 
@@ -531,7 +525,7 @@ int main (int argc, char* argv[])
                     scaffold.clear();
                     signs.clear();
 
-                    neighbors = getNotVistedNeighbors(ctg_beg_int , undigraph, visited); //we start another scaffold from each neighbor of the begining node
+                    getNotVistedNeighbors(ctg_beg_int , undigraph, visited, neighbors); //we start another scaffold from each neighbor of the begining node
                     for(int i =0; i<neighbors.size();i++){
 
                         nextNode = neighbors[i];
@@ -546,7 +540,7 @@ int main (int argc, char* argv[])
 
                     }
 
-                    neighbors = getNotVistedNeighbors(ctg_end_int , undigraph, visited);
+                    getNotVistedNeighbors(ctg_end_int , undigraph, visited, neighbors);
                     for(int i =0; i<neighbors.size();i++){ //we start another scaffold from each neighbor of the ending node
 
                         nextNode = neighbors[i];
@@ -571,7 +565,7 @@ int main (int argc, char* argv[])
 
                     }
 
-                    neighbors = getNotVistedNeighbors(ctg_end_int , undigraph, visited);
+                    getNotVistedNeighbors(ctg_end_int , undigraph, visited, neighbors);
                     cout << "Neighbors size " <<neighbors.size() <<endl;
                     for(int i =0; i<neighbors.size();i++){ //we start another scaffold from each neighbor of the ending node
 
@@ -599,7 +593,7 @@ int main (int argc, char* argv[])
 
                     }
 
-                    neighbors = getNotVistedNeighbors(ctg_beg_int , undigraph, visited);
+                    getNotVistedNeighbors(ctg_beg_int , undigraph, visited, neighbors);
                     for(int i =0; i<neighbors.size();i++){  //we start another scaffold from each neighbor of the begining node
 
                         nextNode = neighbors[i];

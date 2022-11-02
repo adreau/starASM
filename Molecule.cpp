@@ -15,7 +15,7 @@ int Molecule::getEndPos(){
     return end;
 
 }
-string Molecule::getBarcode(){
+string &Molecule::getBarcode(){
 
     return barcode;
 

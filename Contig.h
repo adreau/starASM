@@ -31,7 +31,7 @@ class Contig
     void add_end_molecule(Molecule &mol);
     void sort_barcodes();
     
-    vector<int> isNeighbourSize(Contig &ctg, int condition);
+    void isNeighbourSize(Contig &ctg, int condition, vector < int > &arcs);
 
 };
 
