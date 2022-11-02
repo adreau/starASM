@@ -6,32 +6,30 @@
 
 #include "Molecule.h"
 
-using namespace std;
-
 
 class Contig
 {
 
   public:
 
-    string name;
-    string origin;
+    std::string name;
+    std::string origin;
     int pos_beg,pos_end;
-    vector<Molecule> molecules_beg;
-    vector<Molecule> molecules_mid;
-    vector<Molecule> molecules_end;
-    vector<string> barcodes_beg;
-    vector<string> barcodes_mid;
-    vector<string> barcodes_end;
+    std::vector<Molecule> molecules_beg;
+    std::vector<Molecule> molecules_mid;
+    std::vector<Molecule> molecules_end;
+    std::vector<std::string> barcodes_beg;
+    std::vector<std::string> barcodes_mid;
+    std::vector<std::string> barcodes_end;
 
-    Contig(string &name, string &origin, int pos_beg, int pos_end);
+    Contig(std::string &name, std::string &origin, int pos_beg, int pos_end);
 
     void add_beg_molecule(Molecule &mol);
     void add_mid_molecule(Molecule &mol);
     void add_end_molecule(Molecule &mol);
     void sort_barcodes();
     
-    void isNeighbourSize(Contig &ctg, int condition, vector < int > &arcs);
+    void isNeighbourSize(Contig &ctg, int condition, std::vector < int > &arcs);
 
 };
 

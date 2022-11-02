@@ -5,9 +5,7 @@
 #include <iostream>
 #include "Contig.h"
 
-using namespace std;
-
-Contig::Contig(string &ctg_split_name, string &ctg_orig, int ctg_orig_pos_beg, int ctg_orig_pos_end){
+Contig::Contig(std::string &ctg_split_name, std::string &ctg_orig, int ctg_orig_pos_beg, int ctg_orig_pos_end){
 
     name = ctg_split_name;
     origin = ctg_orig;
@@ -48,10 +46,10 @@ void Contig::sort_barcodes(){
 
 }
 
-int intersectMoleculesSize(vector<string> &v1, vector<string> &v2, int condition){
+int intersectMoleculesSize(std::vector<std::string> &v1, std::vector<std::string> &v2, int condition){
 
 
-    vector<string> commun_molecules;
+    std::vector<std::string> commun_molecules;
 
     set_intersection(v1.begin(),v1.end(),
                      v2.begin(),v2.end(),
@@ -104,9 +102,9 @@ int intersectMoleculesSize(vector<string> &v1, vector<string> &v2, int condition
     return 0;
 }
 
-void Contig::isNeighbourSize(Contig &ctg, int condition, vector<int> &arcs){
+void Contig::isNeighbourSize(Contig &ctg, int condition, std::vector<int> &arcs){
 
-    arcs = vector < int > (4);
+    arcs = std::vector < int > (4);
     // values: "bb", "be", "eb", "ee"
 
     arcs[0] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_beg, condition);
@@ -118,7 +116,7 @@ void Contig::isNeighbourSize(Contig &ctg, int condition, vector<int> &arcs){
 	(ctg.origin == "ctg107" && origin == "ctg77")){
 	
         for(int i=0; i<4;i++){
-            cout << "test arc:"<< name <<"\t"<< ctg.name<<"\t"<<arcs[i]<<endl;
+            std::cout << "test arc:"<< name <<"\t"<< ctg.name<<"\t"<<arcs[i]<<std::endl;
         }	
     }
 }

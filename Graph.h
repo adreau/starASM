@@ -6,18 +6,16 @@
 
 #include "Contig.h"
 
-using namespace std;
-
 class Graph {
   
  public:
 
-  Graph(vector<Contig> &v, vector<std::pair<Contig, Contig>> &e)
+  Graph(std::vector<Contig> &v, std::vector<std::pair<Contig, Contig>> &e)
       : v_(v), e_(e) {}
 
-  vector<Contig> v_;
+  std::vector<Contig> v_;
 
-  vector<std::pair<Contig, Contig>> e_;
+  std::vector<std::pair<Contig, Contig>> e_;
 
 
 };

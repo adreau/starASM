@@ -8,11 +8,10 @@
 #include <map>
 #include <stdexcept>      // std::out_of_range
 
-using namespace std;
-const string scaff_gap = "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN";
+const std::string scaff_gap = "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN";
 
 
-string complement_fast(string &DNAseq){
+std::string complement_fast(std::string &DNAseq){
 
 	reverse(DNAseq.begin(), DNAseq.end());
 	for (size_t i = 0; i < DNAseq.length(); ++i){
@@ -35,8 +34,8 @@ string complement_fast(string &DNAseq){
 	return DNAseq;
 
 }
-string complement(string &dna){
-	string rev="";
+std::string complement(std::string &dna){
+    std::string rev="";
 
 	for(int i=1;i<=dna.length();i++){
 
@@ -50,7 +49,7 @@ string complement(string &dna){
 		   case 'T': rev=rev+"A"; break;
        }
 
-	   if(i%100000 == 0) cout <<i<<endl;
+	   if(i%100000 == 0) std::cout <<i<<std::endl;
 
      }
 	 return rev;
@@ -58,35 +57,35 @@ string complement(string &dna){
 
 int main (int argc, char* argv[]){
 
-	string contig_fasta = argv[1];
-	string scaffolds = argv[2];
-	string scaffolds_fasta = argv[3];
+    std::string contig_fasta = argv[1];
+    std::string scaffolds = argv[2];
+    std::string scaffolds_fasta = argv[3];
 	
-	ifstream ctg_fasta(contig_fasta.c_str());
-	ifstream scaff(scaffolds.c_str());
-	ofstream scaff_fasta(scaffolds_fasta.c_str(), ofstream::out);	
+    std::ifstream ctg_fasta(contig_fasta.c_str());
+    std::ifstream scaff(scaffolds.c_str());
+    std::ofstream scaff_fasta(scaffolds_fasta.c_str(), std::ofstream::out);	
 
-	map<string,string> contigs;
+    std::map<std::string,std::string> contigs;
 
-	string ctg_name, ctg_seq = "";
+    std::string ctg_name, ctg_seq = "";
 	while(getline(ctg_fasta,ctg_name)){
 
 		getline(ctg_fasta,ctg_seq);
-		contigs.insert(pair<string,string>(ctg_name.substr(1),ctg_seq));
+		contigs.insert(std::pair<std::string,std::string>(ctg_name.substr(1),ctg_seq));
 
 	}
 
-	string scaffold_composition;
+    std::string scaffold_composition;
 	int scaff_number = 0;
-	string scaff_seq = "";
+    std::string scaff_seq = "";
 	while(getline(scaff,scaffold_composition)){
 
 		scaff_number++;
 
-		istringstream ss(scaffold_composition);
-		string contig_complete;
+        std::istringstream ss(scaffold_composition);
+        std::string contig_complete;
 		char sens;
-		string contig;
+        std::string contig;
 
 		while(getline(ss, contig_complete, ';')) {
 			
@@ -94,7 +93,7 @@ int main (int argc, char* argv[]){
 
 				sens = contig_complete[0];
 				contig = contig_complete.substr(1);
-				cout << sens <<" "<< contig << endl;
+                std::cout << sens <<" "<< contig << std::endl;
         try {
           ctg_seq = contigs.at(contig);
         }
@@ -126,8 +125,8 @@ int main (int argc, char* argv[]){
 
 
 
-		scaff_fasta << ">scaff_" << scaff_number << endl;
-		scaff_fasta << scaff_seq << endl;
+		scaff_fasta << ">scaff_" << scaff_number << std::endl;
+		scaff_fasta << scaff_seq << std::endl;
 		scaff_seq = "";
 
 

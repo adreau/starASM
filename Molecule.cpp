@@ -2,8 +2,6 @@
 
 #include "Molecule.h"
 
-using namespace std;
-
 int Molecule::getBeginPos(){
 
     return begin;
@@ -15,7 +13,7 @@ int Molecule::getEndPos(){
     return end;
 
 }
-string &Molecule::getBarcode(){
+std::string &Molecule::getBarcode(){
 
     return barcode;
 
