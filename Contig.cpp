@@ -48,55 +48,42 @@ void Contig::sort_barcodes(){
 
 int intersectMoleculesSize(std::vector<std::string> &v1, std::vector<std::string> &v2, int condition){
 
-
-    std::vector<std::string> commun_molecules;
+    std::vector<std::string> common_molecules;
 
     set_intersection(v1.begin(),v1.end(),
                      v2.begin(),v2.end(),
-                     back_inserter(commun_molecules));
+                     back_inserter(common_molecules));
+    size_t s1 = v1.size();
+    size_t s2 = v2.size();
+    size_t sc = common_molecules.size();
+    if (sc == 0) return 0;
     
     switch (condition)
     {
     case 1:
-        if ((commun_molecules.size()>0) && (commun_molecules.size() >= v1.size()*0.8) && (commun_molecules.size() >= v2.size()*0.8))
-            return commun_molecules.size();
-        else return 0;
-        break;
+        if ((sc >= s1 * 0.8) && (sc >= s2 * 0.8)) return sc;
+        return 0;
     case 2: 
-        if ((commun_molecules.size()>0) && ((commun_molecules.size() >= v1.size()*0.8) || (commun_molecules.size() >= v2.size()*0.8)) )
-            return commun_molecules.size();
-        else return 0;
-        break;
+        if ((sc >= s1 * 0.8) || (sc >= s2 * 0.8)) return sc;
+        return 0;
     case 3: 
-        if ((commun_molecules.size()>0) && ((commun_molecules.size() >= v1.size()*0.6) && (commun_molecules.size() >= v2.size()*0.6)) )
-            return commun_molecules.size();
-        else return 0;
-        break;
+        if ((sc >= s1 * 0.6) && (sc >= s2 * 0.6)) return sc;
+        return 0;
     case 4: 
-        if ((commun_molecules.size()>0) && ((commun_molecules.size() >= v1.size()*0.6) || (commun_molecules.size() >= v2.size()*0.6)) )
-            return commun_molecules.size();
-        else return 0;
-        break;
+        if ((sc >= s1 * 0.6) || (sc >= s2 * 0.6)) return sc;
+        return 0;
     case 5: 
-        if ((commun_molecules.size()>0) && ((commun_molecules.size() >= v1.size()*0.4) && (commun_molecules.size() >= v2.size()*0.4)) )
-            return commun_molecules.size();
-        else return 0;
-        break;
+        if ((sc >= s1 * 0.4) && (sc >= s2 * 0.4)) return sc;
+        return 0;
     case 6: 
-        if ((commun_molecules.size()>0) && ((commun_molecules.size() >= v1.size()*0.4) || (commun_molecules.size() >= v2.size()*0.4)) )
-            return commun_molecules.size();
-        else return 0;
-        break;
+        if ((sc >= s1 * 0.4) || (sc >= s2 * 0.4)) return sc;
+        return 0;
     case 7: 
-        if ((commun_molecules.size()>0) && ((commun_molecules.size() >= v1.size()*0.2) && (commun_molecules.size() >= v2.size()*0.2)) )
-            return commun_molecules.size();
-        else return 0;
-        break;
+        if ((sc >= s1 * 0.2) && (sc >= s2 * 0.2)) return sc;
+        return 0;
     case 8: 
-        if ((commun_molecules.size()>0) && ((commun_molecules.size() >= v1.size()*0.2) || (commun_molecules.size() >= v2.size()*0.2)) )
-            return commun_molecules.size();
-        else return 0;
-        break;
+        if ((sc >= s1 * 0.2) || (sc >= s2 * 0.2)) return sc;
+        return 0;
     }
 
     return 0;
@@ -111,12 +98,4 @@ void Contig::isNeighbourSize(Contig &ctg, int condition, std::vector<int> &arcs)
     arcs[1] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_end, condition);
     arcs[2] = intersectMoleculesSize(barcodes_end,ctg.barcodes_beg, condition);
     arcs[3] = intersectMoleculesSize(barcodes_end,ctg.barcodes_end, condition);
-
-    if ((ctg.origin == "ctg77" && origin == "ctg107") ||
-	(ctg.origin == "ctg107" && origin == "ctg77")){
-	
-        for(int i=0; i<4;i++){
-            std::cout << "test arc:"<< name <<"\t"<< ctg.name<<"\t"<<arcs[i]<<std::endl;
-        }	
-    }
 }
