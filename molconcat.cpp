@@ -425,11 +425,6 @@ int main (int argc, char* argv[])
 
     std::cout <<"check molecules sets size" <<std::endl;
 
-    for (int i=0; i<contigs_list.size() ; i++){
-
-        std::cout << contigs_list[i].name << " " <<contigs_list[i].molecules_beg.size()<< " "<<contigs_list[i].molecules_end.size()<<std::endl;
-    }
-
     std::vector<std::pair<std::string, std::string>> arcs_list;
     std::vector<std::string> nodes_list;
     create_nodes(contigs_list,nodes_list);

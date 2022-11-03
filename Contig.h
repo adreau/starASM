@@ -15,9 +15,6 @@ class Contig
     std::string name;
     std::string origin;
     int pos_beg,pos_end;
-    std::vector<Molecule> molecules_beg;
-    std::vector<Molecule> molecules_mid;
-    std::vector<Molecule> molecules_end;
     std::vector<std::string> barcodes_beg;
     std::vector<std::string> barcodes_mid;
     std::vector<std::string> barcodes_end;

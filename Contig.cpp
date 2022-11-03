@@ -16,21 +16,18 @@ Contig::Contig(std::string &ctg_split_name, std::string &ctg_orig, int ctg_orig_
 
 void Contig::add_beg_molecule(Molecule &mol){
 
-    molecules_beg.push_back(mol);
     barcodes_beg.push_back(mol.barcode);
    
 }
 
 void Contig::add_mid_molecule(Molecule &mol){
 
-    molecules_mid.push_back(mol);
     barcodes_mid.push_back(mol.barcode);
     
 }
 
 void Contig::add_end_molecule(Molecule &mol){
 
-    molecules_end.push_back(mol);
     barcodes_end.push_back(mol.barcode);
     
 }
