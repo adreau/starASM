@@ -6,10 +6,10 @@ scaffolds_to_fasta: scaffolds_to_fasta.cpp
 molconcat: molconcat.o Contig.o
 	g++ -std=c++17 -o joinASM molconcat.o Contig.o -lstdc++fs -pthread
 
-molconcat.o: molconcat.cpp Contig.h
+molconcat.o: molconcat.cpp Contig.h Globals.h
 	g++ -std=c++17 -c molconcat.cpp -lstdc++fs -pthread
 
-Contig.o: Contig.cpp Contig.h Molecule.h
+Contig.o: Contig.cpp Contig.h Molecule.h Globals.h
 	g++ -std=c++17 -c Contig.cpp
 
 Molecule.o: Molecule.cpp Molecule.h

@@ -3,6 +3,7 @@
 #include <set>
 #include <algorithm>
 #include <iostream>
+#include "Globals.h"
 #include "Contig.h"
 
 Contig::Contig(std::string &ctg_split_name, std::string &ctg_orig, int ctg_orig_pos_beg, int ctg_orig_pos_end){
@@ -20,12 +21,6 @@ void Contig::add_beg_molecule(Molecule &mol){
    
 }
 
-void Contig::add_mid_molecule(Molecule &mol){
-
-    barcodes_mid.push_back(mol.barcode);
-    
-}
-
 void Contig::add_end_molecule(Molecule &mol){
 
     barcodes_end.push_back(mol.barcode);
@@ -35,15 +30,11 @@ void Contig::add_end_molecule(Molecule &mol){
 void Contig::sort_barcodes(){
 
     sort(barcodes_beg.begin(), barcodes_beg.end());
-
-    if(pos_end-pos_beg>200000)
-        sort(barcodes_mid.begin(), barcodes_mid.end());
-
     sort(barcodes_end.begin(), barcodes_end.end());
 
 }
 
-int intersectMoleculesSize(std::vector<std::string> &v1, std::vector<std::string> &v2, int condition){
+int intersectMoleculesSize(std::vector<std::string> &v1, std::vector<std::string> &v2){
 
     std::vector<std::string> common_molecules;
 
@@ -55,7 +46,7 @@ int intersectMoleculesSize(std::vector<std::string> &v1, std::vector<std::string
     size_t sc = common_molecules.size();
     if (sc == 0) return 0;
     
-    switch (condition)
+    switch (Globals::condition)
     {
     case 1:
         if ((sc >= s1 * 0.8) && (sc >= s2 * 0.8)) return sc;
@@ -86,13 +77,13 @@ int intersectMoleculesSize(std::vector<std::string> &v1, std::vector<std::string
     return 0;
 }
 
-void Contig::isNeighbourSize(Contig &ctg, int condition, std::vector<int> &arcs){
+void Contig::isNeighbourSize(Contig &ctg, std::vector<int> &arcs){
 
     arcs = std::vector < int > (4);
     // values: "bb", "be", "eb", "ee"
 
-    arcs[0] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_beg, condition);
-    arcs[1] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_end, condition);
-    arcs[2] = intersectMoleculesSize(barcodes_end,ctg.barcodes_beg, condition);
-    arcs[3] = intersectMoleculesSize(barcodes_end,ctg.barcodes_end, condition);
+    arcs[0] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_beg);
+    arcs[1] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_end);
+    arcs[2] = intersectMoleculesSize(barcodes_end,ctg.barcodes_beg);
+    arcs[3] = intersectMoleculesSize(barcodes_end,ctg.barcodes_end);
 }

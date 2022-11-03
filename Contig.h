@@ -16,7 +16,6 @@ class Contig
     std::string origin;
     int pos_beg,pos_end;
     std::vector<std::string> barcodes_beg;
-    std::vector<std::string> barcodes_mid;
     std::vector<std::string> barcodes_end;
 
     Contig(std::string &name, std::string &origin, int pos_beg, int pos_end);
@@ -26,7 +25,7 @@ class Contig
     void add_end_molecule(Molecule &mol);
     void sort_barcodes();
     
-    void isNeighbourSize(Contig &ctg, int condition, std::vector < int > &arcs);
+    void isNeighbourSize(Contig &ctg, std::vector < int > &arcs);
 
 };
 
