@@ -13,11 +13,9 @@
 #include <boost/graph/adjacency_list.hpp>
 
 #include "Contig.h"
-#include "Graph.h"
 
 using namespace boost;
 
-namespace fs = std::experimental::filesystem;
 const char tab='\t';
 
 typedef property < edge_weight_t, double >Weight;
