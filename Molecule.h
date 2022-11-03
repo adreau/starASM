@@ -14,14 +14,6 @@ class Molecule {
 
   std::string barcode;
 
-  int getBeginPos();
-  int getEndPos();
-  std::string &getBarcode();
-  int getReadsNumber();
-
-
-
-
 };
 
 
