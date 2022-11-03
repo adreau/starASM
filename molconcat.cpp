@@ -34,6 +34,7 @@ static void show_usage(char *name)
     << "\t-b, --begRatio        FLOAT Ratio of the contig size that is considered as the beginning part (default: " << Globals::beginning_ratio << ", should be less than 0.5)\n"
     << "\t-p, --pairReadsLength INT   ??? (default: " << Globals::pair_reads_length << ")\n"
     << "\t-c, --contigs         FILE  Contig bed file name \n"
+    << "\t-s, --scaffolds       FILE  Scaffolds file name \n"
     << "\t-g, --graph           FILE  Output gfa file name \n"
     << std::endl;
 }
