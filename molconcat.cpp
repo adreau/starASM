@@ -27,14 +27,15 @@ static void show_usage(char *name)
 {
   std::cerr << "Usage: " << name << " <option(s)> MOLECULE FILE \n"
     << "Options:\n"
-    << "\t-h, --help\t\tShow this help message\n"
-    << "\t-w, --window INT\tWindow size for barcode consideration (default 10kb) \n"
-    << "\t-a, --arcsCondition INT\tcondition used for connecting two contigs; values{1..8} \n"
-    << "\t-c, --contigs FILE\tContig bed file name \n"
-    << "\t-g, --graph FILE\tOutput gfa file name \n"
+    << "\t-h, --help                  Show this help message\n"
+    << "\t-w, --window          INT   Window size for barcode consideration (default: " << Globals::window << ") \n"
+    << "\t-a, --arcsCondition   INT   Condition used for connecting two contigs; values{1..8} (default: " << Globals::condition << ", lower is more strict) \n"
+    << "\t-r, --nReads          INT   Min number of common barcodes to get a links (default: " << Globals::min_n_reads << ")\n"
+    << "\t-b, --begRatio        FLOAT Ratio of the contig size that is considered as the beginning part (default: " << Globals::beginning_ratio << ", should be less than 0.5)\n"
+    << "\t-p, --pairReadsLength INT   ??? (default: " << Globals::pair_reads_length << ")\n"
+    << "\t-c, --contigs         FILE  Contig bed file name \n"
+    << "\t-g, --graph           FILE  Output gfa file name \n"
     << std::endl;
-
-
 }
 
 void create_contigs(std::vector<Contig> &list_contigs){
@@ -99,11 +100,11 @@ void add_molecules_to_contigs_extremites(std::vector<Contig> &nodes_list){
     }
 
     if ( ( beg_pos >=  split_ctg1_beg ) && ( beg_pos <=  split_ctg1_beg + std::min(Globals::window,length_ctg1/2) ) &&
-        ( end_pos <= split_ctg1_beg + length_ctg1*0.6 ) ) { //condition begining
+        ( end_pos <= split_ctg1_beg + length_ctg1 * (1 - Globals::beginning_ratio) ) ) { //condition begining
 
       nodes_list[split_contig_count].add_beg_molecule(molecule);
 
-    }else if ( ( beg_pos >=  split_ctg1_beg + length_ctg1*0.4 )  && ( beg_pos <=  split_ctg1_end - Globals::pair_reads_length ) &&
+    }else if ( ( beg_pos >=  split_ctg1_beg + length_ctg1 * Globals::beginning_ratio)  && ( beg_pos <=  split_ctg1_end - Globals::pair_reads_length ) &&
         ( end_pos >=  split_ctg1_end - std::min(Globals::window,length_ctg1/2) )){//condition end
 
 
@@ -111,7 +112,7 @@ void add_molecules_to_contigs_extremites(std::vector<Contig> &nodes_list){
 
         nodes_list[split_contig_count].add_end_molecule(molecule);
 
-      }else if(end_pos <= split_ctg2_beg +length_ctg2*0.6){
+      }else if(end_pos <= split_ctg2_beg +length_ctg2 * (1 - Globals::beginning_ratio) ){
 
         nodes_list[split_contig_count].add_end_molecule(molecule);
 
@@ -163,30 +164,30 @@ void create_arcs_with_size(std::vector<Contig> &ctg_list, std::vector<std::pair<
       ctg_list[i].isNeighbourSize(ctg_list[j], connections);
 
       if(i==j) { //if the same extremity of a contig do not add arc
-        connections[0] = 0;
-        connections[3] = 0;
+        connections[Link_types::BB] = 0;
+        connections[Link_types::EE] = 0;
       }
 
       //add arc if there are three shared barcodes at least and the condition is satisfied
-      if(connections[0]>=3)  {
+      if(connections[Link_types::BB] >= Globals::min_n_reads)  {
         arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":beg",ctg_list[j].name+":beg"));//bb
-        weight.push_back(connections[0]);
+        weight.push_back(connections[Link_types::BB]);
         if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
       }
-      if(connections[1]>=3) {
+      if(connections[Link_types::BE] >= Globals::min_n_reads) {
         arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":beg",ctg_list[j].name+":end"));//be
-        weight.push_back(connections[1]);
+        weight.push_back(connections[Link_types::BE]);
         if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
       }
 
-      if(connections[2]>=3) {
+      if(connections[Link_types::EB] >= Globals::min_n_reads) {
         arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":end",ctg_list[j].name+":beg"));//eb
-        weight.push_back(connections[2]);
+        weight.push_back(connections[Link_types::EB]);
         if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
       }
-      if(connections[3]>=3) {
+      if(connections[Link_types::EE] >= Globals::min_n_reads) {
         arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":end",ctg_list[j].name+":end"));//ee
-        weight.push_back(connections[3]);
+        weight.push_back(connections[Link_types::EE]);
         if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
       }
 
@@ -382,8 +383,10 @@ bool extendScaffold (int & nextNode, std::vector<std::string> & scaffold, std::v
 
 // Global values
 int         Globals::pair_reads_length =   300;
+float       Globals::beginning_ratio   =   0.4;
 int         Globals::window            = 10000;
 int         Globals::condition         =     1;
+int         Globals::min_n_reads       =     3;
 std::string Globals::contigFile        =    "";
 std::string Globals::graph_file        =    "";
 std::string Globals::molecule_file     =    "";
@@ -408,6 +411,12 @@ int main (int argc, char* argv[])
       Globals::window = std::stoi(argv[++i]);
     } else if ((arg == "-a") || (arg == "--arcsCondition")){
       Globals::condition = std::stoi(argv[++i]);
+    } else if ((arg == "-r") || (arg == "--minReads")){
+      Globals::min_n_reads = std::stoi(argv[++i]);
+    } else if ((arg == "-b") || (arg == "--begRatio")){
+      Globals::beginning_ratio = std::stof(argv[++i]);
+    } else if ((arg == "-p") || (arg == "--pairReadsLength")){
+      Globals::pair_reads_length = std::stoi(argv[++i]);
     } else if ((arg == "-c") || (arg == "--contigs")){
       Globals::contigFile = argv[++i];
     } else if ((arg == "-g") || (arg == "--graph")){
@@ -492,15 +501,15 @@ int main (int argc, char* argv[])
 
       std::cout <<"not visited"<<std::endl;
 
-      if ((degreeBeg != 2) || (degreeEnd != 2)) {//if it's a unbrached path end
+      if ((degreeBeg != 2) || (degreeEnd != 2)) {//if it's a unbranched path end
 
         std::cout <<"a branching path begins"<<degreeBeg <<"\t"<<degreeEnd<<std::endl;
         visited[ctg_beg_int] = true;
         visited[ctg_end_int] = true;
 
         if((degreeBeg == 1) ||
-            (degreeBeg>2) && (degreeEnd == 2) ||
-            (degreeBeg>2) && (degreeEnd >2)) { //we start with the begining
+            (degreeBeg > 2) && (degreeEnd == 2) ||
+            (degreeBeg > 2) && (degreeEnd > 2)) { //we start with the beginning
 
           signs.push_back('+');
         }else { //we start with the end
@@ -524,7 +533,7 @@ int main (int argc, char* argv[])
           signs.clear();
 
           getNotVistedNeighbors(ctg_beg_int , undigraph, visited, neighbors); //we start another scaffold from each neighbor of the begining node
-          for(int i =0; i<neighbors.size();i++){
+          for(int i = 0; i < neighbors.size(); i++){
 
             nextNode = neighbors[i];
             unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
@@ -539,7 +548,7 @@ int main (int argc, char* argv[])
           }
 
           getNotVistedNeighbors(ctg_end_int , undigraph, visited, neighbors);
-          for(int i =0; i<neighbors.size();i++){ //we start another scaffold from each neighbor of the ending node
+          for(int i = 0; i < neighbors.size(); i++){ //we start another scaffold from each neighbor of the ending node
 
             nextNode = neighbors[i];
             unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
@@ -555,7 +564,7 @@ int main (int argc, char* argv[])
 
         } else if(degreeBeg == 1) {
           std::cout <<"contig with begining extremity open" <<std::endl;
-          if(degreeEnd >2){ //the unbrancing path has ended with the ending node
+          if(degreeEnd > 2){ //the unbrancing path has ended with the ending node
 
             print_scaffold(scaffold,signs,scaffoldFile);
             scaffold.clear();
@@ -565,12 +574,12 @@ int main (int argc, char* argv[])
 
           getNotVistedNeighbors(ctg_end_int , undigraph, visited, neighbors);
           std::cout << "Neighbors size " <<neighbors.size() <<std::endl;
-          for(int i =0; i<neighbors.size();i++){ //we start another scaffold from each neighbor of the ending node
+          for(int i = 0; i < neighbors.size(); i++){ //we start another scaffold from each neighbor of the ending node
 
             nextNode = neighbors[i];
-            std::cout << "Neighbor: " <<neighbors[i] <<std::endl;
+            std::cout << "Neighbor: " << neighbors[i] <<std::endl;
             unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited, nodes_list_string, nodes_list_int);
-            std::cout <<"continue? "<<unbranched <<std::endl;
+            std::cout <<"continue? "<< unbranched <<std::endl;
             while(unbranched){
               unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
             }
@@ -582,8 +591,8 @@ int main (int argc, char* argv[])
           }
         } else if(degreeEnd == 1){
 
-          std::cout <<"contig with ending extremity open" <<std::endl;
-          if(degreeBeg >2){//the unbrancing path has ended with the begining node
+          std::cout << "contig with ending extremity open" <<std::endl;
+          if(degreeBeg > 2){//the unbranching path has ended with the begining node
 
             print_scaffold(scaffold,signs,scaffoldFile);
             scaffold.clear();

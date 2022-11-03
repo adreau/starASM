@@ -79,11 +79,10 @@ int intersectMoleculesSize(std::vector<std::string> &v1, std::vector<std::string
 
 void Contig::isNeighbourSize(Contig &ctg, std::vector<int> &arcs){
 
-    arcs = std::vector < int > (4);
-    // values: "bb", "be", "eb", "ee"
+    arcs = std::vector < int > (n_link_types);
 
-    arcs[0] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_beg);
-    arcs[1] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_end);
-    arcs[2] = intersectMoleculesSize(barcodes_end,ctg.barcodes_beg);
-    arcs[3] = intersectMoleculesSize(barcodes_end,ctg.barcodes_end);
+    arcs[Link_types::BB] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_beg);
+    arcs[Link_types::BE] = intersectMoleculesSize(barcodes_beg,ctg.barcodes_end);
+    arcs[Link_types::EB] = intersectMoleculesSize(barcodes_end,ctg.barcodes_beg);
+    arcs[Link_types::EE] = intersectMoleculesSize(barcodes_end,ctg.barcodes_end);
 }
