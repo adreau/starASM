@@ -2,18 +2,16 @@
 #define DEF_MOLECULE
 
 #include <string>
+#include "Interval.h"
 
-class Molecule {
+struct Molecule: public Interval {
   
- public:
+  Molecule(unsigned long int b, unsigned long int e, std::string &bc, int nr)
+      : Interval(b, e), barcode(bc), noReads(nr) {}
 
-  Molecule(int &b, int &e, std::string &bc, int &nR)
-      : begin(b), end(e), barcode(bc), noReads(nR) {}
-
-  int begin, end, noReads;
+  int noReads;
 
   std::string barcode;
-
 };
 
 

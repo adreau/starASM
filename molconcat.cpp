@@ -5,22 +5,23 @@
 #include <iterator>
 #include <algorithm>
 #include <cmath>
-#include <experimental/filesystem>
 #include <vector>
-#include <thread>
+#include <unordered_map>
+#include <cassert>
 
-#include <boost/config.hpp>
-#include <boost/graph/adjacency_list.hpp>
+// #include <boost/config.hpp>
+// #include <boost/graph/adjacency_list.hpp>
 
 #include "Globals.h"
 #include "Contig.h"
+#include "Graph.h"
 
-using namespace boost;
+// using namespace boost;
 
 const char tab='\t';
 
-typedef property < edge_weight_t, double >Weight;
-typedef adjacency_list < vecS, vecS, undirectedS, no_property, Weight > UndirectedGraph;
+// typedef property < edge_weight_t, double >Weight;
+// typedef adjacency_list < vecS, vecS, undirectedS, no_property, Weight > UndirectedGraph;
 
 
 static void show_usage(char *name)
@@ -39,169 +40,307 @@ static void show_usage(char *name)
     << std::endl;
 }
 
-void create_contigs(std::vector<Contig> &list_contigs){
+// Read/store a set of (split) contigs in a bed file.
+void create_contigs(std::vector < Contig > &contig_list, std::unordered_map < std::string, size_t > &contig_ids){
 
-  std::ifstream contig_bed(Globals::contigFile.c_str());
-  std::string contig_line, ctg, ctg_name;
+  std::ifstream contig_bed(Globals::contig_file_name.c_str());
+  std::string contig_line, ctg;
   int pos_beg, pos_end;
 
-  while(getline(contig_bed, contig_line)){
+  while (getline(contig_bed, contig_line)){
 
     std::stringstream splitstream (contig_line);
     splitstream >> ctg >> pos_beg >> pos_end;
 
-    ctg_name = ctg + "_";
-    ctg_name = ctg_name + std::to_string(pos_beg);
-    ctg_name = ctg_name + "_";
-    ctg_name = ctg_name + std::to_string(pos_end);
-
-    Contig contig(ctg_name, ctg, pos_beg, pos_end);
-
-    list_contigs.push_back(contig);
+    // If the contig is split, the second (third, etc.) part should be appened to the contig
+    if ((! contig_list.empty()) && (ctg == contig_list.back().name)) {
+      contig_list.back().addPart(pos_beg, pos_end);
+    }
+    else {
+      auto pos = contig_ids.find(ctg);
+      // We have a new contig
+      if (pos == contig_ids.end()) {
+        contig_ids[ctg] = contig_list.size();
+        contig_list.emplace_back(ctg, pos_beg, pos_end);
+      }
+      // If the file is not ordered (but why?) the contig may be already stored
+      else {
+        contig_list[pos->second].addPart(pos_beg, pos_end);
+      }
+    }
   }
 }
 
-void add_molecules_to_contigs_extremites(std::vector<Contig> &nodes_list){
+int intersectMoleculesSize(std::vector < std::string > &b1, std::vector < std::string > &b2){
 
-  std::ifstream molecule_list(Globals::molecule_file.c_str());
-  std::string molecule_line, contig, barcode;
-  int beg_pos, end_pos, noReads;
+    std::vector < std::string > common_barcodes;
 
-  int split_contig_count = 0;
+    set_intersection(b1.begin(), b1.end(),
+                     b2.begin(), b2.end(),
+                     std::back_inserter(common_barcodes));
+    size_t s1 = b1.size();
+    size_t s2 = b2.size();
+    size_t sc = common_barcodes.size();
+    if (sc == 0) return 0;
 
-  int split_ctg1_beg = nodes_list[split_contig_count].pos_beg;
-  int split_ctg1_end = nodes_list[split_contig_count].pos_end;
-  int length_ctg1 = split_ctg1_end - split_ctg1_beg;
-
-  int split_ctg2_beg = nodes_list[split_contig_count+1].pos_beg;
-  int split_ctg2_end = nodes_list[split_contig_count+1].pos_end;
-  int length_ctg2 = split_ctg2_end - split_ctg2_beg;
-
-  long unsigned int n_lines;
-  for(n_lines = 0; getline(molecule_list, molecule_line); ++n_lines){
-
-    std::stringstream  splitstream(molecule_line);
-    splitstream >> contig >> beg_pos >> end_pos >> barcode >> noReads;
-    Molecule molecule (beg_pos, end_pos, barcode, noReads);
-
-    if ( ( (beg_pos >= split_ctg1_end) && (contig.compare(nodes_list[split_contig_count].origin) == 0)) ||
-        (contig.compare(nodes_list[split_contig_count].origin) > 0)){ //we reached the end of ctg1
-
-      ++split_contig_count;
-
-      split_ctg1_beg = nodes_list[split_contig_count].pos_beg;
-      split_ctg1_end = nodes_list[split_contig_count].pos_end;
-      length_ctg1 = split_ctg1_end - split_ctg1_beg;
-
-      split_ctg2_beg = nodes_list[split_contig_count+1].pos_beg;
-      split_ctg2_end = nodes_list[split_contig_count+1].pos_end;
-      length_ctg2 = split_ctg2_end - split_ctg2_beg;
-
+    switch (Globals::condition) {
+    case 1:
+        if ((sc >= s1 * 0.8) && (sc >= s2 * 0.8)) return sc;
+        return 0;
+    case 2:
+        if ((sc >= s1 * 0.8) || (sc >= s2 * 0.8)) return sc;
+        return 0;
+    case 3:
+        if ((sc >= s1 * 0.6) && (sc >= s2 * 0.6)) return sc;
+        return 0;
+    case 4:
+        if ((sc >= s1 * 0.6) || (sc >= s2 * 0.6)) return sc;
+        return 0;
+    case 5:
+        if ((sc >= s1 * 0.4) && (sc >= s2 * 0.4)) return sc;
+        return 0;
+    case 6:
+        if ((sc >= s1 * 0.4) || (sc >= s2 * 0.4)) return sc;
+        return 0;
+    case 7:
+        if ((sc >= s1 * 0.2) && (sc >= s2 * 0.2)) return sc;
+        return 0;
+    case 8:
+        if ((sc >= s1 * 0.2) || (sc >= s2 * 0.2)) return sc;
+        return 0;
     }
 
-    if ( ( beg_pos >=  split_ctg1_beg ) && ( beg_pos <=  split_ctg1_beg + std::min(Globals::window,length_ctg1/2) ) &&
-        ( end_pos <= split_ctg1_beg + length_ctg1 * (1 - Globals::beginning_ratio) ) ) { //condition begining
-
-      nodes_list[split_contig_count].add_beg_molecule(molecule);
-
-    }else if ( ( beg_pos >=  split_ctg1_beg + length_ctg1 * Globals::beginning_ratio)  && ( beg_pos <=  split_ctg1_end - Globals::pair_reads_length ) &&
-        ( end_pos >=  split_ctg1_end - std::min(Globals::window,length_ctg1/2) )){//condition end
+    return 0;
+}
 
 
-      if (contig.compare(nodes_list[split_contig_count+1].origin) != 0){ //ctg1 and ctg2 not the split of the same ctg
+void add_molecules_to_contigs_extremites(std::vector < Contig > &contigs, std::unordered_map < std::string, size_t > &contig_ids){
 
-        nodes_list[split_contig_count].add_end_molecule(molecule);
+  std::ifstream molecule_list(Globals::molecule_file_name.c_str());
+  std::string molecule_line, barcode, ctg, prevCtg;
+  unsigned long int beg_pos, end_pos, nReads;
+  size_t ctg_id, prevCtg_id = 0;
 
-      }else if(end_pos <= split_ctg2_beg +length_ctg2 * (1 - Globals::beginning_ratio) ){
+  long unsigned int n_lines;
+  for (n_lines = 0; getline(molecule_list, molecule_line); ++n_lines){
 
-        nodes_list[split_contig_count].add_end_molecule(molecule);
+    std::stringstream  splitstream(molecule_line);
+    splitstream >> ctg >> beg_pos >> end_pos >> barcode >> nReads;
 
-        if (end_pos >= split_ctg2_beg + Globals::pair_reads_length) { //condition begining of ctg2
-
-          nodes_list[split_contig_count+1].add_beg_molecule(molecule);
-
-        }
+    if (ctg == prevCtg) {
+      ctg_id = prevCtg_id;
+    }
+    else {
+      auto pos = contig_ids.find(ctg);
+      if (pos == contig_ids.end()) {
+        std::cerr << "Error, contig '" << ctg << "' (found in molecule file) is not present in contig file.\n";
+        exit(EXIT_FAILURE);
       }
+      ctg_id     = pos->second;
+      prevCtg    = ctg;
+      prevCtg_id = ctg_id;
+    }
 
+    for (ContigPart &contigPart: contigs[ctg_id].contigParts) {
+      // This is the condition to set a barcode to the beginning of a contig part
+      if ((beg_pos >= contigPart.begin) && (beg_pos <= contigPart.begin + std::min(Globals::window, contigPart.getSize() / 2)) &&
+          (end_pos <= contigPart.begin + contigPart.getSize() * (1 - Globals::beginning_ratio))) {
+        contigPart.add_beg_molecule(barcode);
+      }
+      // This is the condition to set a barcode to the end of a contig part
+      else if ((beg_pos >= contigPart.begin + contigPart.getSize() * Globals::beginning_ratio) && (beg_pos <= contigPart.end - Globals::pair_reads_length) &&
+          (end_pos >= contigPart.end - std::min(Globals::window, contigPart.getSize() / 2))) {
+        contigPart.add_end_molecule(barcode);
+      }
     }
     if (n_lines % 10000000 == 0) std::cout << n_lines << " lines read.\r" << std::flush;
 
   }//end while read molecules
   std::cout << n_lines << " lines read.\n";
 
-  for(int i=0; i<nodes_list.size();i++){
-    sort(nodes_list[i].barcodes_beg.begin(), nodes_list[i].barcodes_beg.end());
-    sort(nodes_list[i].barcodes_end.begin(), nodes_list[i].barcodes_end.end());
+  for (Contig &contig: contigs) {
+    contig.sort_barcodes();
   }
-
-
 }
 
-void create_nodes(std::vector<Contig> &ctg_list, std::vector<std::string> &nodes){
+void create_nodes (std::vector < Contig > &contigs, Graph &graph) {
 
-  for(int i=0; i < ctg_list.size(); i++){
-    nodes.push_back(ctg_list[i].name+":beg");
-    nodes.push_back(ctg_list[i].name+":end");
-  }
-
-}
-
-
-void create_arcs_with_size(std::vector<Contig> &ctg_list, std::vector<std::pair<std::string, std::string>> &arcs, std::vector<int> &weight){
-
-  for(int i=0; i < ctg_list.size(); i++){ //construct the arcs between extremites of same contig
-    arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":beg",ctg_list[i].name+":end"));
-    weight.push_back(100000);
-  }
-
-  std::cout << "normal arcs: "<< arcs.size()<<std::endl;
-
-  int diffCtgArc = 0;
-
-  for(int i=0; i < ctg_list.size()-1; i++){
-
-    for (int j = i; j < ctg_list.size(); j++){
-
-      std::vector<int> connections;
-      ctg_list[i].isNeighbourSize(ctg_list[j], connections);
-
-      if(i==j) { //if the same extremity of a contig do not add arc
-        connections[Link_types::BB] = 0;
-        connections[Link_types::EE] = 0;
-      }
-
-      //add arc if there are three shared barcodes at least and the condition is satisfied
-      if(connections[Link_types::BB] >= Globals::min_n_reads)  {
-        arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":beg",ctg_list[j].name+":beg"));//bb
-        weight.push_back(connections[Link_types::BB]);
-        if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
-      }
-      if(connections[Link_types::BE] >= Globals::min_n_reads) {
-        arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":beg",ctg_list[j].name+":end"));//be
-        weight.push_back(connections[Link_types::BE]);
-        if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
-      }
-
-      if(connections[Link_types::EB] >= Globals::min_n_reads) {
-        arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":end",ctg_list[j].name+":beg"));//eb
-        weight.push_back(connections[Link_types::EB]);
-        if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
-      }
-      if(connections[Link_types::EE] >= Globals::min_n_reads) {
-        arcs.push_back(std::pair<std::string, std::string>(ctg_list[i].name+":end",ctg_list[j].name+":end"));//ee
-        weight.push_back(connections[Link_types::EE]);
-        if(ctg_list[i].origin.compare(ctg_list[j].origin)!=0) diffCtgArc++;
-      }
-
-
+  for (size_t contigId = 0; contigId < contigs.size(); ++contigId) {
+    Contig &contig = contigs[contigId];
+    for (size_t contigPartId = 0; contigPartId < contig.contigParts.size(); ++contigPartId) {
+      graph.add_node(contigId, contigPartId);
     }
-
-    std::cout<< "progess:" << i<< " "<<arcs.size()<<std::endl;
   }
-
-  std::cout << "Number of arcs between different original contigs: "<< diffCtgArc << std::endl;
-
 }
+
+
+void create_arcs (std::vector<Contig> &contigs, Graph &graph) {
+
+  size_t nodeId1 = 0;
+  size_t nodeId2 = 0;
+  for (size_t contigId1 = 0; contigId1 < contigs.size(); ++contigId1) {
+    Contig &contig1 = contigs[contigId1];
+    for (size_t contigPartId1 = 0; contigPartId1 < contig1.contigParts.size(); ++contigPartId1) {
+      ContigPart &contigPart1 = contig1.contigParts[contigPartId1];
+      assert(graph.nodes[nodeId1].contigId     == contigId1);
+      assert(graph.nodes[nodeId1].contigPartId == contigPartId1);
+      size_t contigPartId2 = contigPartId1;
+      for (size_t contigId2 = contigId1; contigId2 < contigs.size(); ++contigId2) {
+        Contig &contig2 = contigs[contigId2];
+        for (; contigPartId2 < contig2.contigParts.size(); ++contigPartId2) {
+          ContigPart &contigPart2 = contig2.contigParts[contigPartId2];
+          assert(graph.nodes[nodeId2].contigId     == contigId2);
+          assert(graph.nodes[nodeId2].contigPartId == contigPartId2);
+          // Use a strange trick to keep nodeId1 and nodeId2 synchronized
+          nodeId2 = nodeId1;
+          if ((contigId1 != contigId2) || (contigPartId1 != contigPartId2)) {
+            if (intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_beg) >= Globals::min_n_reads) {
+              graph.add_edge(nodeId1, nodeId2, Link_types::BB);
+            }
+            if (intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_end) >= Globals::min_n_reads) {
+              graph.add_edge(nodeId1, nodeId2, Link_types::BE);
+            }
+            if (intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_beg) >= Globals::min_n_reads) {
+              graph.add_edge(nodeId1, nodeId2, Link_types::EB);
+            }
+            if (intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_end) >= Globals::min_n_reads) {
+              graph.add_edge(nodeId1, nodeId2, Link_types::EE);
+            }
+          }
+          ++nodeId2;
+        }
+        contigPartId2 = 0;
+      }
+      ++nodeId1;
+    }
+  }
+}
+
+
+void get_node_name (std::vector < Contig > &contigs, Graph &graph, size_t nodeId, std::string &name) {
+  Node       &node       = graph.nodes[nodeId];
+  Contig     &contig     = contigs[node.contigId];
+  ContigPart &contigPart = contig.contigParts[node.contigPartId];
+  name = contig.name + "_" + std::to_string(contigPart.begin) + "_" + std::to_string(contigPart.end);
+}
+
+
+void write_graph (std::vector < Contig > &contigs, Graph &graph) {
+
+  std::ofstream graph_file (Globals::graph_file_name.c_str(), std::ofstream::out);
+  std::string ctg1, ctg2;
+
+  graph_file << "H\tVN:Z:1.0\n";
+
+  for (Contig &contig: contigs) {
+    for (ContigPart &contigPart: contig.contigParts) {
+      graph_file << "S" << "\t" << contig.name << "_" << contigPart.begin << "_" << contigPart.end << "\t*\tLN:i:" << contigPart.getSize() << "\n";
+    }
+  }
+  for (size_t nodeId1 = 0; nodeId1 < graph.nodes.size(); ++nodeId1) {
+    Node &node = graph.nodes[nodeId1];
+    get_node_name(contigs, graph, nodeId1, ctg1);
+    for (Edge &edge: node.edges) {
+      size_t nodeId2 = edge.nodeId;
+      if (nodeId1 < nodeId2) {
+        get_node_name(contigs, graph, nodeId2, ctg2);
+        switch (edge.link_type) {
+          case Link_types::BB:
+            graph_file << "L" << "\t" << ctg2 << "\t-\t" << ctg1 << "\t+\n";
+            break;
+          case Link_types::BE:
+            graph_file << "L" << "\t" << ctg2 << "\t+\t" << ctg1 << "\t+\n";
+            break;
+          case Link_types::EB:
+            graph_file << "L" << "\t" << ctg1 << "\t+\t" << ctg2 << "\t+\n";
+            break;
+          case Link_types::EE:
+            graph_file << "L" << "\t" << ctg1 << "\t+\t" << ctg2 << "\t-\n";
+            break;
+        }
+      }
+    }
+  }
+  graph_file.close();
+}
+
+
+// Remove arcs when bifurcations are observed
+// Arcs are actually not removed, but replaced by a given value
+void remove_bifurcations (Graph &graph) {
+
+  size_t not_set = graph.nodes.size();
+  for (size_t nodeId1 = 0; nodeId1 < graph.nodes.size(); ++nodeId1) {
+    Node &node1 = graph.nodes[nodeId1];
+    int n_begin = 0;
+    int n_end   = 0;
+    for (Edge &edge: node1.edges) {
+      if (edge.nodeId != not_set) {
+        if ((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::BE)) {
+          ++n_begin;
+        }
+        else {
+          ++n_end;
+        }
+      }
+      // Found a bifurcation at the beginning of the contig
+      if (n_begin > 1) {
+        for (Edge &edge1: node1.edges) {
+          if ((edge1.link_type == Link_types::BB) || (edge1.link_type == Link_types::BE)) {
+            // Discard this edge
+            edge1.nodeId = not_set;
+            // Find the corresponding edge in the other node (each edge is present twice)
+            size_t nodeId2 = edge1.nodeId;
+            for (Edge &edge2: graph.nodes[nodeId2].edges) {
+              if ((edge2.nodeId == nodeId1) && ((edge2.link_type == Link_types::BB) || (edge2.link_type == Link_types::EB))) {
+                edge2.nodeId = not_set;
+              }
+            }
+          }
+        }
+      }
+      // Found a bifurcation at the end of the contig
+      if (n_end > 1) {
+        for (Edge &edge1: node1.edges) {
+          if ((edge1.link_type == Link_types::EB) || (edge1.link_type == Link_types::EE)) {
+            edge1.nodeId = not_set;
+            size_t nodeId2 = edge1.nodeId;
+            for (Edge &edge2: graph.nodes[nodeId2].edges) {
+              if ((edge2.nodeId == nodeId1) && ((edge2.link_type == Link_types::BE) || (edge2.link_type == Link_types::EE))) {
+                edge2.nodeId = not_set;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
+size_t find_first_scaffold_end (Graph &graph, size_t nodeIdStart, std::vector < bool > seen_nodes) {
+
+  size_t not_set = graph.nodes.size();
+  for (size_t nodeId = nodeIdStart; nodeId < graph.nodes.size(); ++nodeId) {
+    if (! seen_nodes[nodeId]) {
+      Node        &node    = graph.nodes[nodeId];
+      unsigned int n_nodes = 0;
+      for (Edge &edge: node.edges) {
+        if (edge.nodeId != not_set) {
+          ++n_nodes;
+        }
+        if (n_nodes < 2) {
+          return nodeId;
+        }
+      }
+    }
+  }
+  return not_set;
+}
+
+
+
+/*
 
 void get_canonical_ctg(std::pair<std::string,std::string> &arc, std::string &ctg1, std::string &sign1, std::string &ctg2, std::string &sign2){
 
@@ -223,38 +362,6 @@ void get_canonical_ctg(std::pair<std::string,std::string> &arc, std::string &ctg
   else sign2="-";
 
 }
-
-void write_graph(std::vector<Contig> &contigs_list, std::vector<std::pair<std::string, std::string>> &arcs_list, std::vector<int> &weigth){
-
-  std::ofstream graph_file(Globals::graph_file.c_str(), std::ofstream::out);
-
-  graph_file << "H" << "\t" << "VN:Z:1.0"<< std::endl;
-
-  int ctg_length;
-
-  for(int i=0; i<contigs_list.size(); i++){
-
-    ctg_length=contigs_list[i].pos_end-contigs_list[i].pos_beg;
-    graph_file << "S" << "\t" << contigs_list[i].name <<"\t"<<"*"<< "\t" <<"LN:i:"<<ctg_length<<std::endl;
-
-  }
-
-  std::string ctg1,sign1,ctg2,sign2;
-
-  for(int i=0; i<arcs_list.size();i++){
-
-    get_canonical_ctg(arcs_list[i], ctg1,sign1, ctg2,sign2);
-
-    if(ctg1.compare(ctg2)!=0)
-
-      graph_file<< "L" <<"\t"<< ctg1 << "\t" << sign1 <<"\t"<<ctg2<<"\t"<<sign2<<"\t"<<"*"<<"\t"<<"BC:i:"<<weigth[i]<<std::endl;
-  }
-
-
-  graph_file.close();
-
-}
-
 
 char opposing_sign(char sign){
 
@@ -382,27 +489,25 @@ bool extendScaffold (int & nextNode, std::vector<std::string> & scaffold, std::v
 
 }
 
+*/
 
 // Global values
-int         Globals::pair_reads_length =   300;
-float       Globals::beginning_ratio   =   0.4;
-int         Globals::window            = 10000;
-int         Globals::condition         =     1;
-int         Globals::min_n_reads       =     3;
-std::string Globals::contigFile        =    "";
-std::string Globals::graph_file        =    "";
-std::string Globals::molecule_file     =    "";
-std::string Globals::scaffold_file     =    "";
+int               Globals::pair_reads_length  =   300;
+float             Globals::beginning_ratio    =   0.4;
+unsigned long int Globals::window             = 10000;
+int               Globals::condition          =     1;
+int               Globals::min_n_reads        =     3;
+std::string       Globals::contig_file_name   =    "";
+std::string       Globals::graph_file_name    =    "";
+std::string       Globals::molecule_file_name =    "";
+std::string       Globals::scaffold_file_name =    "";
 
 
-int main (int argc, char* argv[])
-{
+int main (int argc, char* argv[]) {
   if (argc < 2) {
     show_usage(argv[0]);
     return 1;
   }
-
-  Globals globals;
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -420,22 +525,28 @@ int main (int argc, char* argv[])
     } else if ((arg == "-p") || (arg == "--pairReadsLength")){
       Globals::pair_reads_length = std::stoi(argv[++i]);
     } else if ((arg == "-c") || (arg == "--contigs")){
-      Globals::contigFile = argv[++i];
+      Globals::contig_file_name = argv[++i];
     } else if ((arg == "-g") || (arg == "--graph")){
-      Globals::graph_file = argv[++i];
+      Globals::graph_file_name = argv[++i];
     } else if ((arg == "-s") || (arg == "--scaffolds")){
-      Globals::scaffold_file = argv[++i];
+      Globals::scaffold_file_name = argv[++i];
     } else {
-      Globals::molecule_file = argv[i++];
+      Globals::molecule_file_name = argv[i++];
     }
   }
 
-  std::vector<Contig> contigs_list;
-  create_contigs(contigs_list);
+  std::vector < Contig > contigs_list;
+  std::unordered_map < std::string, size_t > contig_ids;
+  create_contigs(contigs_list, contig_ids);
 
-  add_molecules_to_contigs_extremites(contigs_list);
+  add_molecules_to_contigs_extremites(contigs_list, contig_ids);
+  Graph graph;
+  create_nodes(contigs_list, graph);
+  create_arcs(contigs_list, graph);
+  write_graph(contigs_list, graph);
 
 
+/*
   std::cout << "number of contigs: "<< contigs_list.size() << std::endl;
 
   std::vector<std::pair<std::string, std::string>> arcs_list;
@@ -622,6 +733,7 @@ int main (int argc, char* argv[])
   }
 
   scaffoldFile.close();
+*/
 
-  return 0;
+  return EXIT_SUCCESS;
 }
