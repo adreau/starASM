@@ -2,26 +2,14 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <iterator>
 #include <algorithm>
-#include <cmath>
 #include <vector>
 #include <unordered_map>
 #include <cassert>
 
-// #include <boost/config.hpp>
-// #include <boost/graph/adjacency_list.hpp>
-
 #include "Globals.h"
 #include "Contig.h"
 #include "Graph.h"
-
-// using namespace boost;
-
-const char tab='\t';
-
-// typedef property < edge_weight_t, double >Weight;
-// typedef adjacency_list < vecS, vecS, undirectedS, no_property, Weight > UndirectedGraph;
 
 
 static void show_usage(char *name)
@@ -270,11 +258,11 @@ void write_graph (std::vector < Contig > &contigs, Graph &graph) {
 void remove_bifurcations (Graph &graph) {
 
   size_t not_set = graph.nodes.size();
-  for (size_t nodeId1 = 0; nodeId1 < graph.nodes.size(); ++nodeId1) {
-    Node &node1 = graph.nodes[nodeId1];
+  for (size_t nodeId = 0; nodeId < graph.nodes.size(); ++nodeId) {
+    Node &node  = graph.nodes[nodeId];
     int n_begin = 0;
     int n_end   = 0;
-    for (Edge &edge: node1.edges) {
+    for (Edge &edge: node.edges) {
       if (edge.nodeId != not_set) {
         if ((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::BE)) {
           ++n_begin;
@@ -285,31 +273,21 @@ void remove_bifurcations (Graph &graph) {
       }
       // Found a bifurcation at the beginning of the contig
       if (n_begin > 1) {
-        for (Edge &edge1: node1.edges) {
-          if ((edge1.link_type == Link_types::BB) || (edge1.link_type == Link_types::BE)) {
+        for (Edge &edge: node.edges) {
+          if ((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::BE)) {
             // Discard this edge
-            edge1.nodeId = not_set;
+            edge.nodeId = not_set;
             // Find the corresponding edge in the other node (each edge is present twice)
-            size_t nodeId2 = edge1.nodeId;
-            for (Edge &edge2: graph.nodes[nodeId2].edges) {
-              if ((edge2.nodeId == nodeId1) && ((edge2.link_type == Link_types::BB) || (edge2.link_type == Link_types::EB))) {
-                edge2.nodeId = not_set;
-              }
-            }
+            graph.get_reciprocal_edge(nodeId, edge).nodeId = not_set;
           }
         }
       }
       // Found a bifurcation at the end of the contig
       if (n_end > 1) {
-        for (Edge &edge1: node1.edges) {
-          if ((edge1.link_type == Link_types::EB) || (edge1.link_type == Link_types::EE)) {
-            edge1.nodeId = not_set;
-            size_t nodeId2 = edge1.nodeId;
-            for (Edge &edge2: graph.nodes[nodeId2].edges) {
-              if ((edge2.nodeId == nodeId1) && ((edge2.link_type == Link_types::BE) || (edge2.link_type == Link_types::EE))) {
-                edge2.nodeId = not_set;
-              }
-            }
+        for (Edge &edge: node.edges) {
+          if ((edge.link_type == Link_types::EB) || (edge.link_type == Link_types::EE)) {
+            edge.nodeId = not_set;
+            graph.get_reciprocal_edge(nodeId, edge).nodeId = not_set;
           }
         }
       }

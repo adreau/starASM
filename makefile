@@ -9,11 +9,8 @@ molconcat: molconcat.o Contig.o
 molconcat.o: molconcat.cpp Contig.h Globals.h
 	g++ -std=c++11 -Wall -c molconcat.cpp
 
-Contig.o: Contig.cpp Contig.h Molecule.h Globals.h
+Contig.o: Contig.cpp Contig.h Globals.h
 	g++ -std=c++11 -Wall -c Contig.cpp
-
-Molecule.o: Molecule.cpp Molecule.h
-	g++ -std=c++11 -Wall -c Molecule.cpp
 
 clean:
 	rm -f *~ *.o

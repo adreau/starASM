@@ -30,6 +30,20 @@ struct Graph {
     nodes[nodeId1].edges.emplace_back(nodeId2, link_type);
     nodes[nodeId2].edges.emplace_back(nodeId1, reverse_link_type[link_type]);
   }
+
+  // Each edge is repeated: if there is an edge from node1 to node2, there should be an edge from node2 to node1
+  // This fonction finds the reciprocal edge
+  Edge &get_reciprocal_edge (size_t nodeId1, Edge &edge1) {
+    size_t nodeId2 = edge1.nodeId;
+    Link_types link_type = reverse_link_type[edge1.link_type];
+    for (Edge &edge2: nodes[nodeId2].edges) {
+      if ((edge2.nodeId == nodeId1) && (edge2.link_type == link_type)) {
+        return edge2;
+      }
+    }
+    assert(false);
+    return edge1;
+  }
 };
 
 #endif

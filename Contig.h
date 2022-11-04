@@ -6,7 +6,6 @@
 
 #include "Globals.h"
 #include "Interval.h"
-#include "Molecule.h"
 
 
 // Input contigs are usually are split by splitASM
