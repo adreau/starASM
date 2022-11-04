@@ -45,9 +45,9 @@ void create_contigs(std::vector<Contig> &list_contigs){
   std::string contig_line, ctg, ctg_name;
   int pos_beg, pos_end;
 
-  while(getline(contig_bed,contig_line)){
+  while(getline(contig_bed, contig_line)){
 
-    std::stringstream  splitstream(contig_line);
+    std::stringstream splitstream (contig_line);
     splitstream >> ctg >> pos_beg >> pos_end;
 
     ctg_name = ctg + "_";
@@ -58,7 +58,6 @@ void create_contigs(std::vector<Contig> &list_contigs){
     Contig contig(ctg_name, ctg, pos_beg, pos_end);
 
     list_contigs.push_back(contig);
-
   }
 }
 
@@ -78,17 +77,17 @@ void add_molecules_to_contigs_extremites(std::vector<Contig> &nodes_list){
   int split_ctg2_end = nodes_list[split_contig_count+1].pos_end;
   int length_ctg2 = split_ctg2_end - split_ctg2_beg;
 
-  while(getline(molecule_list,molecule_line)){
+  long unsigned int n_lines;
+  for(n_lines = 0; getline(molecule_list, molecule_line); ++n_lines){
 
     std::stringstream  splitstream(molecule_line);
     splitstream >> contig >> beg_pos >> end_pos >> barcode >> noReads;
-    Molecule molecule (beg_pos,end_pos,barcode,noReads);
-
+    Molecule molecule (beg_pos, end_pos, barcode, noReads);
 
     if ( ( (beg_pos >= split_ctg1_end) && (contig.compare(nodes_list[split_contig_count].origin) == 0)) ||
         (contig.compare(nodes_list[split_contig_count].origin) > 0)){ //we reached the end of ctg1
 
-      split_contig_count +=1;
+      ++split_contig_count;
 
       split_ctg1_beg = nodes_list[split_contig_count].pos_beg;
       split_ctg1_end = nodes_list[split_contig_count].pos_end;
@@ -125,8 +124,10 @@ void add_molecules_to_contigs_extremites(std::vector<Contig> &nodes_list){
       }
 
     }
+    if (n_lines % 10000000 == 0) std::cout << n_lines << " lines read.\r" << std::flush;
 
   }//end while read molecules
+  std::cout << n_lines << " lines read.\n";
 
   for(int i=0; i<nodes_list.size();i++){
     sort(nodes_list[i].barcodes_beg.begin(), nodes_list[i].barcodes_beg.end());
@@ -432,14 +433,10 @@ int main (int argc, char* argv[])
   std::vector<Contig> contigs_list;
   create_contigs(contigs_list);
 
-
-
   add_molecules_to_contigs_extremites(contigs_list);
 
 
   std::cout << "number of contigs: "<< contigs_list.size() << std::endl;
-
-  std::cout <<"check molecules sets size" <<std::endl;
 
   std::vector<std::pair<std::string, std::string>> arcs_list;
   std::vector<std::string> nodes_list;
