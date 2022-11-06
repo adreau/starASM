@@ -1,16 +1,13 @@
-all: scaffolds_to_fasta molconcat
+all: scaffolds_to_fasta joinASM
 
 scaffolds_to_fasta: scaffolds_to_fasta.cpp
 	g++ -std=c++11 -Wall -o scaffolds_to_fasta scaffolds_to_fasta.cpp
 
-molconcat: molconcat.o Contig.o
-	g++ -std=c++11 -Wall -o joinASM molconcat.o Contig.o
+joinASM: joinASM.o
+	g++ -std=c++11 -Wall -o joinASM joinASM.o
 
-molconcat.o: molconcat.cpp Contig.h Globals.h
-	g++ -std=c++11 -Wall -c molconcat.cpp
-
-Contig.o: Contig.cpp Contig.h Globals.h
-	g++ -std=c++11 -Wall -c Contig.cpp
+joinASM.o: joinASM.cpp Contig.h Globals.h
+	g++ -std=c++11 -Wall -c joinASM.cpp
 
 clean:
 	rm -f *~ *.o

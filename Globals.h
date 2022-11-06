@@ -3,6 +3,8 @@
 
 static const int n_link_types = 4;
 
+static const size_t unset_value = -1;
+
 enum Link_types { BB = 0, BE = 1, EB = 2, EE = 3 };
 
 // What happens if you swap first and second elements?
@@ -12,6 +14,7 @@ struct Globals {
   static int               pair_reads_length;
   static float             beginning_ratio;
   static unsigned long int window;
+  static unsigned long int max_contig_distance;
   static int               condition;
   static int               min_n_reads;
   static std::string       contig_file_name;

@@ -12,16 +12,16 @@
 // This is part of a split contig
 struct ContigPart: public Interval {
 
-  std::vector < std::string > barcodes_beg;
-  std::vector < std::string > barcodes_end;
+  std::vector < unsigned long int > barcodes_beg;
+  std::vector < unsigned long int > barcodes_end;
 
   ContigPart (unsigned long int pos_beg, unsigned long int pos_end): Interval(pos_beg, pos_end) {}
 
-  void add_beg_molecule (std::string &barcode) {
+  void add_beg_molecule (unsigned long int barcode) {
     barcodes_beg.push_back(barcode);
   }
 
-  void add_end_molecule (std::string &barcode) {
+  void add_end_molecule (unsigned long int barcode) {
     barcodes_end.push_back(barcode);
   }
 
@@ -53,5 +53,8 @@ struct Contig {
     }
   }
 };
+
+
+using Contigs = std::vector < Contig >;
 
 #endif
