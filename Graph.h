@@ -10,6 +10,14 @@ struct Edge {
 
   Edge (size_t n, Link_types l): nodeId(n), link_type(l) {}
 
+  void unset () {
+    nodeId = unset_value;
+  }
+
+  bool is_set () {
+    return (nodeId != unset_value);
+  }
+
   bool operator== (const Edge &edge) {
     return ((nodeId == edge.nodeId) && link_type == edge.nodeId);
   }
@@ -95,7 +103,7 @@ struct Graph {
         return edge2;
       }
     }
-    std::cerr << "Error!  Cannot find reciprocal edge.\n";
+    std::cerr << "Error!  Cannot find reciprocal edge for " << nodeId1 << " -> " << edge1.nodeId << "-" << edge1.link_type << ".\n";
     exit(EXIT_FAILURE);
   }
 };

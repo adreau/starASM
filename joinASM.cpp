@@ -37,6 +37,8 @@ void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t >
   std::ifstream contig_file(Globals::contig_file_name.c_str());
   std::string contig_line, ctg;
   int pos_beg, pos_end;
+  unsigned int n_contigs      = 0;
+  unsigned int n_contig_parts = 0;
 
   if (! contig_file.is_open()){
       std::cerr << "Error!  Cannot open file '" << Globals::contig_file_name << "'" << std::endl;
@@ -51,6 +53,7 @@ void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t >
     // If the contig is split, the second (third, etc.) part should be appened to the contig
     if ((! contigs.empty()) && (ctg == contigs.back().name)) {
       contigs.back().addPart(pos_beg, pos_end);
+      ++n_contig_parts;
     }
     else {
       auto pos = contig_ids.find(ctg);
@@ -58,13 +61,17 @@ void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t >
       if (pos == contig_ids.end()) {
         contig_ids[ctg] = contigs.size();
         contigs.emplace_back(ctg, pos_beg, pos_end);
+        ++n_contigs;
+        ++n_contig_parts;
       }
       // If the file is not ordered (but why?) the contig may be already stored
       else {
         contigs[pos->second].addPart(pos_beg, pos_end);
+        ++n_contig_parts;
       }
     }
   }
+  std::cout << n_contigs << " contigs, and " << n_contig_parts << " contig parts, seen.\n";
 }
 
 // Count the number of common barcodes between to sets
@@ -119,6 +126,9 @@ void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < 
   unsigned long int beg_pos, end_pos, nReads, barcode_id;
   std::unordered_set < std::string > unseen_ctgs;
   std::unordered_map < std::string, unsigned long int > barcode_to_id;
+  unsigned int n_barcodes_begin  = 0;
+  unsigned int n_barcodes_end    = 0;
+  unsigned int n_barcodes_unused = 0;
   size_t ctg_id, prevCtg_id = 0;
 
   if (! molecule_file.is_open()){
@@ -159,16 +169,23 @@ void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < 
       if ((beg_pos >= contigPart.begin) && (beg_pos <= contigPart.begin + std::min(Globals::window, contigPart.getSize() / 2)) &&
           (end_pos <= contigPart.begin + contigPart.getSize() * (1 - Globals::beginning_ratio))) {
         contigPart.add_beg_molecule(barcode_id);
+        ++n_barcodes_begin;
       }
       // This is the condition to set a barcode to the end of a contig part
       else if ((beg_pos >= contigPart.begin + contigPart.getSize() * Globals::beginning_ratio) && (beg_pos <= contigPart.end - Globals::pair_reads_length) &&
           (end_pos >= contigPart.end - std::min(Globals::window, contigPart.getSize() / 2))) {
         contigPart.add_end_molecule(barcode_id);
+        ++n_barcodes_end;
+      }
+      else {
+        ++n_barcodes_unused;
       }
     }
     if (n_lines % 10000000 == 0) std::cout << n_lines << " lines read.\r" << std::flush;
   }
   std::cout << n_lines << " lines read.\n";
+  std::cout << n_barcodes_begin << " anchored on the left part, " << n_barcodes_end << " anchored on the right part, and " << n_barcodes_unused << " unused.\n";
+  std::cout << barcode_to_id.size() << " different barcodes seen.\n";
 
   if (! unseen_ctgs.empty()) {
     std::cerr << "Warning, several contigs are seen in the molecules, but not in the contigs:\n";
@@ -197,6 +214,7 @@ void create_arcs (Contigs &contigs, Graph &graph) {
 
   size_t nodeId1 = 0;
   size_t nodeId2 = 0;
+  unsigned int n_edges = 0;
   for (size_t contigId1 = 0; contigId1 < contigs.size(); ++contigId1) {
     Contig &contig1 = contigs[contigId1];
     for (size_t contigPartId1 = 0; contigPartId1 < contig1.contigParts.size(); ++contigPartId1) {
@@ -215,15 +233,19 @@ void create_arcs (Contigs &contigs, Graph &graph) {
           if ((contigId1 != contigId2) || (contigPartId1 != contigPartId2)) {
             if (intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_beg) >= Globals::min_n_reads) {
               graph.add_edge(nodeId1, nodeId2, Link_types::BB);
+              ++n_edges;
             }
             if (intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_end) >= Globals::min_n_reads) {
               graph.add_edge(nodeId1, nodeId2, Link_types::BE);
+              ++n_edges;
             }
             if (intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_beg) >= Globals::min_n_reads) {
               graph.add_edge(nodeId1, nodeId2, Link_types::EB);
+              ++n_edges;
             }
             if (intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_end) >= Globals::min_n_reads) {
               graph.add_edge(nodeId1, nodeId2, Link_types::EE);
+              ++n_edges;
             }
           }
           ++nodeId2;
@@ -235,6 +257,7 @@ void create_arcs (Contigs &contigs, Graph &graph) {
     }
   }
   std::cout << "Node #" << graph.nodes.size() << " / " << graph.nodes.size() << ".\n";
+  std::cout << n_edges << " edges found (out of " << (2 * graph.nodes.size() * (graph.nodes.size() - 1)) << " possible edges).\n";
 }
 
 
@@ -296,41 +319,47 @@ void write_graph (Contigs &contigs, Graph &graph) {
 // Arcs are actually not removed, but replaced by -1
 void remove_bifurcations (Graph &graph) {
 
+  unsigned int n_removed = 0;
   for (size_t nodeId = 0; nodeId < graph.nodes.size(); ++nodeId) {
     Node &node  = graph.nodes[nodeId];
     int n_begin = 0;
     int n_end   = 0;
     for (Edge &edge: node.edges) {
-      if (edge.nodeId != unset_value) {
-        if ((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::BE)) {
-          ++n_begin;
-        }
-        else {
-          ++n_end;
-        }
+      if ((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::BE)) {
+        ++n_begin;
+      }
+      else {
+        ++n_end;
       }
       // Found a bifurcation at the beginning of the contig
       if (n_begin > 1) {
         for (Edge &edge: node.edges) {
-          if ((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::BE)) {
-            // Discard this edge
-            edge.nodeId = unset_value;
-            // Find the corresponding edge in the other node (each edge is present twice)
-            graph.get_reciprocal_edge(nodeId, edge).nodeId = unset_value;
+          if (edge.is_set()) {
+            if ((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::BE)) {
+              // Find the corresponding edge in the other node (each edge is present twice)
+              graph.get_reciprocal_edge(nodeId, edge).unset();
+              // Discard this edge (do it after having found the reciprocal edge!)
+              edge.unset();
+            }
           }
         }
+        ++n_removed;
       }
       // Found a bifurcation at the end of the contig
       if (n_end > 1) {
         for (Edge &edge: node.edges) {
-          if ((edge.link_type == Link_types::EB) || (edge.link_type == Link_types::EE)) {
-            edge.nodeId = unset_value;
-            graph.get_reciprocal_edge(nodeId, edge).nodeId = unset_value;
+          if (edge.is_set()) {
+            if ((edge.link_type == Link_types::EB) || (edge.link_type == Link_types::EE)) {
+              graph.get_reciprocal_edge(nodeId, edge).unset();
+              edge.unset();
+            }
           }
         }
+        ++n_removed;
       }
     }
   }
+  std::cout << "Removed " << n_removed << " / " << (2 * graph.nodes.size()) << " bifurcations.\n";
 }
 
 // Find an element which has at most one neighbor
@@ -443,158 +472,6 @@ void print_scaffold (Scaffolds &scaffolds, Contigs &contigs) {
 }
 
 
-
-/*
-
-void get_canonical_ctg(std::pair<std::string,std::string> &arc, std::string &ctg1, std::string &sign1, std::string &ctg2, std::string &sign2){
-
-  std::string tmp_sign1, tmp_sign2;
-  int pos = arc.first.find(":");
-  ctg1 = arc.first.substr(0,pos);
-  tmp_sign1 = arc.first.substr(pos);
-
-  pos = arc.second.find(":");
-  ctg2 = arc.second.substr(0,pos);
-  tmp_sign2 = arc.second.substr(pos);
-
-  if(tmp_sign1.compare(":beg")==0)
-    sign1="-";
-  else sign1="+";
-
-  if(tmp_sign2.compare(":beg")==0)
-    sign2="+";
-  else sign2="-";
-
-}
-
-char opposing_sign(char sign){
-
-  if(sign == '+') return '-';
-  else return '+';
-
-}
-
-void print_scaffold( std::vector<std::string> &scaffold, std::vector<char> &signs, std::ofstream &scaffoldFile){
-
-  std::cout << "Scaffold size: "<< scaffold.size()<<std::endl;
-  if(signs[0] == '-') {
-    for(int i=0; i<scaffold.size();i++)
-      scaffoldFile << opposing_sign(signs[i]) <<scaffold[i]<<";";
-  }else {
-    for(int i=0; i<scaffold.size();i++)
-      scaffoldFile << signs[i] <<scaffold[i]<<";";
-  }
-  scaffoldFile <<"\n";
-}
-
-void getNotVistedNeighbors(int ctg_beg_int , UndirectedGraph &undigraph, std::vector<bool> &visited, std::vector < int > &neighbors){
-
-  typename graph_traits<UndirectedGraph>::adjacency_iterator vi, vi_end;
-
-  for (boost::tie(vi, vi_end) = adjacent_vertices(ctg_beg_int, undigraph); vi != vi_end; ++vi){
-
-    std::cout << "Neighbors all: "<<*vi<<std::endl;
-    if(! visited[*vi] && out_degree(*vi,undigraph) <= 2)
-      neighbors.push_back(*vi);
-
-  }
-
-}
-
-bool extendScaffold (int & nextNode, std::vector<std::string> & scaffold, std::vector<char> &signs, UndirectedGraph &undigraph, std::vector<bool> &visited,
-    std::map<int,std::string> &nodes_list_string,   std::map<std::string,int> &nodes_list_int){
-
-  std::vector<int> neighbors;
-  getNotVistedNeighbors(nextNode, undigraph, visited, neighbors);
-
-  std::cout <<"Neighbors of the next node:" << neighbors.size() <<std::endl;
-
-  if(neighbors.size() != 1){
-
-    if(scaffold.size() == 0){//then it is an isolated contig
-
-      visited[nextNode] = true;
-      std::string node_sens = nodes_list_string.at(nextNode);
-      std::string contig_name = node_sens.substr(0,node_sens.length()-4);
-      std::string sens = node_sens.substr(node_sens.length()-3,3);
-      std::cout << "Contig name: "<<contig_name<<std::endl;
-      std::cout <<"Sense: "<<sens<<std::endl;
-      if(sens.compare("beg")==0){
-        std::string otherEx = contig_name.append(":end");
-
-        std::cout <<"Other extr: "<< otherEx <<std::endl;
-        int nodeOtherEx = nodes_list_int.at(otherEx);
-        std::cout <<"Other extr in node: "<< nodeOtherEx <<std::endl;
-        visited[nodeOtherEx] = true;
-
-      }else {
-
-        std::string otherEx = contig_name.append(":beg");
-        std::cout <<"Other extr: "<< otherEx <<std::endl;
-        int nodeOtherEx = nodes_list_int.at(otherEx);
-        std::cout <<"Other extr in node: "<< nodeOtherEx <<std::endl;
-        visited[nodeOtherEx] = true;
-
-
-      }
-
-      signs.push_back('+');
-      scaffold.push_back(contig_name.substr(0,node_sens.length()-4));
-    }
-
-    return false;
-
-  }else{
-
-    int otherExtemity = neighbors[0];
-    visited[nextNode] = true; //we start visiting but not yet sure if both extremities are ok
-
-    getNotVistedNeighbors(otherExtemity , undigraph, visited, neighbors);
-
-
-    if(neighbors.size() <= 1){ //we include the contig in the scaffold
-
-      std::string node_sens = nodes_list_string.at(nextNode);
-      std::cout << "1:"<< node_sens <<std::endl;
-      std::string contig_name = node_sens.substr(0,node_sens.length()-4);
-      std::cout << "2:"<< contig_name <<std::endl;
-      std::string sens = node_sens.substr(node_sens.length()-3,3);
-      std::cout << "3:"<< sens <<std::endl;
-
-      visited[otherExtemity] = true;
-
-      if(sens.compare("beg")==0){
-
-        signs.push_back('+');
-
-      }else {
-
-        signs.push_back('-');
-      }
-      scaffold.push_back(contig_name);
-
-      if(neighbors.size() == 0){ //the path has ended
-        return false;
-      }else {
-        nextNode = neighbors[0];
-        return true;
-      }
-
-    }else{//the contig is not visted in the end because the other extremity has many neighbors
-      visited[nextNode] = false;
-      return false;
-    }
-  }
-
-
-
-
-
-
-}
-
-*/
-
 // Global values
 int               Globals::pair_reads_length   =   300;
 float             Globals::beginning_ratio     =   0.4;
@@ -656,196 +533,6 @@ int main (int argc, char* argv[]) {
   find_scaffolds(graph, scaffolds);
   merge_close_contigs(graph, contigs, scaffolds);
   print_scaffold(scaffolds, contigs);
-
-
-/*
-  std::cout << "number of contigs: "<< contigs_list.size() << std::endl;
-
-  std::vector<std::pair<std::string, std::string>> arcs_list;
-  std::vector<std::string> nodes_list;
-  create_nodes(contigs_list,nodes_list);
-  std::cout<<"nodes: "<<nodes_list.size()<<std::endl;
-
-  std::vector<int> weight_list;
-  create_arcs_with_size(contigs_list, arcs_list, weight_list);
-  std::cout << "arcs: "<<arcs_list.size()<<std::endl;
-
-  write_graph(contigs_list, arcs_list, weight_list);
-
-  //traverse the graph
-
-
-  std::ofstream scaffoldFile(Globals::scaffold_file.c_str(), std::ofstream::out);
-
-  UndirectedGraph undigraph(arcs_list.size());
-
-
-  std::map<std::string,int> nodes_list_int;
-  std::map<int,std::string> nodes_list_string;
-  std::vector<bool> visited;
-  for(int i=0;i<nodes_list.size();i++){
-
-    nodes_list_int.insert(std::pair<std::string,int>(nodes_list[i],i));
-    nodes_list_string.insert(std::pair<int,std::string>(i, nodes_list[i]));
-    visited.push_back(false);
-  }
-
-
-
-  for(int i=0; i<arcs_list.size(); i++){
-
-    add_edge(nodes_list_int.at(arcs_list[i].first), nodes_list_int.at(arcs_list[i].second),undigraph);
-
-  }
-
-  std::cout<<"graph edges :" <<undigraph.m_edges.size() <<std::endl;
-  std::cout<<"graph vertices :"<<undigraph.m_vertices.size() <<std::endl;
-
-  std::vector<char> signs;
-  std::vector<std::string> scaffold;
-
-  std::vector <int> neighbors;
-
-  int nextNode;
-  bool unbranched;
-
-  for(int i=0;i<contigs_list.size();i++){
-
-    int ctg_beg_int = nodes_list_int.at(contigs_list[i].name+":beg");
-    int ctg_end_int = nodes_list_int.at(contigs_list[i].name+":end");
-    std::cout << contigs_list[i].name <<"\t" << ctg_beg_int << "\t"<< ctg_end_int <<std::endl;
-
-    if (! visited[ctg_beg_int] ){ //if the contig was not yet included in a scaffold
-
-      int degreeBeg = out_degree(ctg_beg_int, undigraph);
-      int degreeEnd = out_degree(ctg_end_int, undigraph);
-
-      std::cout <<"not visited"<<std::endl;
-
-      if ((degreeBeg != 2) || (degreeEnd != 2)) {//if it's a unbranched path end
-
-        std::cout <<"a branching path begins"<<degreeBeg <<"\t"<<degreeEnd<<std::endl;
-        visited[ctg_beg_int] = true;
-        visited[ctg_end_int] = true;
-
-        if((degreeBeg == 1) ||
-            (degreeBeg > 2) && (degreeEnd == 2) ||
-            (degreeBeg > 2) && (degreeEnd > 2)) { //we start with the beginning
-
-          signs.push_back('+');
-        }else { //we start with the end
-
-          signs.push_back('-');
-
-        }
-
-        scaffold.push_back(contigs_list[i].name);
-
-        if ((degreeBeg == 1) && (degreeEnd == 1)){ //isolated contig
-          std::cout <<"isolated contig" <<std::endl;
-          print_scaffold(scaffold,signs,scaffoldFile);
-          scaffold.clear();
-          signs.clear();
-
-        }else if ((degreeBeg >= 2) && (degreeEnd >=2)){ //the scaffold contains only one contig
-          std::cout <<"contig with two extremites closed" <<std::endl;
-          print_scaffold(scaffold,signs,scaffoldFile);
-          scaffold.clear();
-          signs.clear();
-
-          getNotVistedNeighbors(ctg_beg_int , undigraph, visited, neighbors); //we start another scaffold from each neighbor of the begining node
-          for(int i = 0; i < neighbors.size(); i++){
-
-            nextNode = neighbors[i];
-            unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
-            while(unbranched){
-              unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
-            }
-
-            print_scaffold(scaffold,signs,scaffoldFile);
-            scaffold.clear();
-            signs.clear();
-
-          }
-
-          getNotVistedNeighbors(ctg_end_int , undigraph, visited, neighbors);
-          for(int i = 0; i < neighbors.size(); i++){ //we start another scaffold from each neighbor of the ending node
-
-            nextNode = neighbors[i];
-            unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
-            while(unbranched){
-              unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
-            }
-
-            print_scaffold(scaffold,signs,scaffoldFile);
-            scaffold.clear();
-            signs.clear();
-
-          }
-
-        } else if(degreeBeg == 1) {
-          std::cout <<"contig with begining extremity open" <<std::endl;
-          if(degreeEnd > 2){ //the unbrancing path has ended with the ending node
-
-            print_scaffold(scaffold,signs,scaffoldFile);
-            scaffold.clear();
-            signs.clear();
-
-          }
-
-          getNotVistedNeighbors(ctg_end_int , undigraph, visited, neighbors);
-          std::cout << "Neighbors size " <<neighbors.size() <<std::endl;
-          for(int i = 0; i < neighbors.size(); i++){ //we start another scaffold from each neighbor of the ending node
-
-            nextNode = neighbors[i];
-            std::cout << "Neighbor: " << neighbors[i] <<std::endl;
-            unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited, nodes_list_string, nodes_list_int);
-            std::cout <<"continue? "<< unbranched <<std::endl;
-            while(unbranched){
-              unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
-            }
-
-            print_scaffold(scaffold,signs,scaffoldFile);
-            scaffold.clear();
-            signs.clear();
-
-          }
-        } else if(degreeEnd == 1){
-
-          std::cout << "contig with ending extremity open" <<std::endl;
-          if(degreeBeg > 2){//the unbranching path has ended with the begining node
-
-            print_scaffold(scaffold,signs,scaffoldFile);
-            scaffold.clear();
-            signs.clear();
-
-          }
-
-          getNotVistedNeighbors(ctg_beg_int , undigraph, visited, neighbors);
-          for(int i =0; i<neighbors.size();i++){  //we start another scaffold from each neighbor of the begining node
-
-            nextNode = neighbors[i];
-            unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
-            while(unbranched){
-              unbranched = extendScaffold (nextNode,scaffold,signs, undigraph,visited,nodes_list_string, nodes_list_int);
-            }
-
-            print_scaffold(scaffold,signs,scaffoldFile);
-            scaffold.clear();
-            signs.clear();
-
-          }
-
-        }
-
-      }
-
-    }
-
-  }
-
-  scaffoldFile.close();
-*/
 
   return EXIT_SUCCESS;
 }
