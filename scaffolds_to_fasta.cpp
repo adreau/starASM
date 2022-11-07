@@ -173,7 +173,7 @@ int main (int argc, char* argv[]){
                     scaff_seq.append(scaff_gap);
                 }
 
-                ctg_seq.substr(start, end - start + 1);
+                ctg_seq = ctg_seq.substr(start, end - start + 1);
                 if (strand == '-') {
                     complement(ctg_seq);
                 }
