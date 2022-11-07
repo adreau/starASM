@@ -50,6 +50,8 @@ void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t >
     std::stringstream splitstream (contig_line);
     splitstream >> ctg >> pos_beg >> pos_end;
 
+    // BED format is 0-based on the start, and 1-based on the end
+    ++pos_beg;
     // If the contig is split, the second (third, etc.) part should be appened to the contig
     if ((! contigs.empty()) && (ctg == contigs.back().name)) {
       contigs.back().addPart(pos_beg, pos_end);
@@ -188,8 +190,10 @@ void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < 
   std::cout << barcode_to_id.size() << " different barcodes seen.\n";
 
   if (! unseen_ctgs.empty()) {
-    std::cerr << "Warning, several contigs are seen in the molecules, but not in the contigs:\n";
-    for (auto &unseen_ctg: unseen_ctgs) {
+    std::vector < std::string > sorted_unseen_ctgs (unseen_ctgs.begin(), unseen_ctgs.end()); 
+    sort(sorted_unseen_ctgs.begin(), sorted_unseen_ctgs.end());
+    std::cerr << "Warning, " << sorted_unseen_ctgs.size() << " contigs are seen in the molecules, but not in the contigs:\n";
+    for (auto &unseen_ctg: sorted_unseen_ctgs) {
       std::cerr << "\t" << unseen_ctg << "\n";
     }
   }
@@ -367,15 +371,8 @@ size_t find_first_scaffold_end (Graph &graph, size_t nodeIdStart, std::vector < 
 
   for (size_t nodeId = nodeIdStart; nodeId < graph.nodes.size(); ++nodeId) {
     if (! seen_nodes[nodeId]) {
-      Node        &node    = graph.nodes[nodeId];
-      unsigned int n_nodes = 0;
-      for (Edge &edge: node.edges) {
-        if (edge.nodeId != unset_value) {
-          ++n_nodes;
-        }
-        if (n_nodes < 2) {
-          return nodeId;
-        }
+      if (graph.nodes[nodeId].get_n_edges() < 2) {
+        return nodeId;
       }
     }
   }
@@ -388,28 +385,31 @@ void find_scaffolds (Graph &graph, Scaffolds &scaffolds) {
   size_t n_nodes = graph.nodes.size();
   std::vector < bool > seen_nodes (n_nodes, false);
   for (size_t nodeIdStart = 0; nodeIdStart < n_nodes; nodeIdStart = find_first_scaffold_end(graph, nodeIdStart, seen_nodes)) {
+    size_t prev_node_id = nodeIdStart;
     Node &node = graph.nodes[nodeIdStart];
     seen_nodes[nodeIdStart] = true;
     scaffolds.emplace_back();
     // First of a chain
-    if (node.get_n_edges() > 1) {
+    if (node.get_n_edges() > 0) {
       // Find whether we should go right, or reverse the first contig
       Edge &edge = node.get_first_edge();
       bool is_forward = ((edge.link_type == Link_types::EB) || (edge.link_type == Link_types::EE));
       scaffolds.back().emplace_back(graph.nodes[nodeIdStart], is_forward);
       while (true) {
-        Node &nextNode = graph.nodes[edge.nodeId];
+        size_t nodeId = edge.nodeId;
+        Node &node = graph.nodes[nodeId];
         is_forward = (((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::EB)) == is_forward);
-        scaffolds.back().emplace_back(graph.nodes[edge.nodeId], is_forward);
-        seen_nodes[edge.nodeId] = true;
-        if (nextNode.get_n_edges() == 1) {
+        scaffolds.back().emplace_back(node, is_forward);
+        seen_nodes[nodeId] = true;
+        if (node.get_n_edges() == 1) {
           break;
         }
-        edge = node.get_other_edge(edge);
+        edge = node.get_other_edge(prev_node_id, reverse_link_type[edge.link_type]);
         // This only should happen if the scaffold is circular
         if (seen_nodes[edge.nodeId]) {
           break;
         }
+        prev_node_id = nodeId;
       }
     }
     // Lone node
@@ -431,20 +431,24 @@ ContigPart &get_contig_part (Contigs &contigs, NodeId &nodeId) {
 // Merge two consecutive contigs if the belong to the same scaffold, have been previously split, and are not too distant from each other
 void merge_close_contigs (Graph &graph, Contigs &contigs, Scaffolds &scaffolds) {
 
+  unsigned int n_merges = 0;
   for (Scaffold &scaffold: scaffolds) {
-    ScaffoldPart &prev_scaffold_part = scaffold.front();
-    ContigPart   &prev_contig_part   = get_contig_part(contigs, prev_scaffold_part.nodeId);
     for (size_t scaffold_part_id = 1; scaffold_part_id < scaffold.size(); ++scaffold_part_id) {
+      ScaffoldPart &prev_scaffold_part = scaffold[scaffold_part_id-1];
+      ContigPart   &prev_contig_part   = get_contig_part(contigs, prev_scaffold_part.nodeId);
       ScaffoldPart &next_scaffold_part = scaffold[scaffold_part_id];
       ContigPart   &next_contig_part   = get_contig_part(contigs, next_scaffold_part.nodeId);
-      if ((prev_scaffold_part.is_forward == next_scaffold_part.is_forward) && (prev_contig_part.get_distance(next_contig_part) <= Globals::max_contig_distance)) {
+std::cout << "Comparing " << prev_scaffold_part << " -> " << prev_contig_part << "  vs  " << next_scaffold_part << " -> " << next_contig_part << "\n";
+      if ((prev_scaffold_part.nodeId.contigId == next_scaffold_part.nodeId.contigId) &&
+          (prev_scaffold_part.is_forward == next_scaffold_part.is_forward) &&
+          (prev_contig_part.get_distance(next_contig_part) <= Globals::max_contig_distance)) {
         next_contig_part.merge(prev_contig_part);
         prev_contig_part.unset();
+        ++n_merges;
       }
-      next_scaffold_part = prev_scaffold_part;
-      next_contig_part   = prev_contig_part;
     }
   }
+  std::cout << n_merges << " / " << graph.nodes.size() << " contig part merges.\n";
 }
 
 
@@ -522,7 +526,6 @@ int main (int argc, char* argv[]) {
   Contigs contigs;
   std::unordered_map < std::string, size_t > contig_ids;
   create_contigs(contigs, contig_ids);
-
   add_molecules_to_contigs_extremites(contigs, contig_ids);
   Graph graph;
   create_nodes(contigs, graph);

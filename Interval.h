@@ -25,8 +25,20 @@ struct Interval {
   }
 
   bool is_set () {
-    return (begin == 0);
+    return (begin != 0);
   }
+
+  friend std::ostream &operator<< (std::ostream &out, Interval &e);
 };
+
+inline std::ostream &operator<< (std::ostream &out, Interval &i) {
+  if (i.is_set()) {
+    out << i.begin << "-" << i.end;
+  }
+  else {
+    out << "--";
+  }
+  return out;
+}
 
 #endif

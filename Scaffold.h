@@ -7,7 +7,14 @@ struct ScaffoldPart {
   bool   is_forward;
 
   ScaffoldPart (NodeId &n, bool b): nodeId(n), is_forward(b) {}
+
+  friend std::ostream &operator<< (std::ostream &out, ScaffoldPart &sp);
 };
+
+inline std::ostream &operator<< (std::ostream &out, ScaffoldPart &sp) {
+  out << (sp.is_forward? '+': '-') << sp.nodeId;
+  return out;
+}
 
 using Scaffold = std::vector < ScaffoldPart >;
 

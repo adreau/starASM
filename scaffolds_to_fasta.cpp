@@ -4,140 +4,194 @@
 #include <string>
 #include <cstdlib>
 #include <algorithm>
-#include <experimental/filesystem>
 #include <map>
 #include <stdexcept>      // std::out_of_range
 
-const std::string scaff_gap = "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN";
+const size_t line_len = 60;
+
+static void show_usage(char *name) {
+
+  std::cerr << "Usage: " << name << "\n"
+    << "Options:\n"
+    << "\t-h, --help            Show this help message\n"
+    << "\t-c, --contigs   FILE  Input contigs FASTA file\n"
+    << "\t-j, --joins     FILE  Input join file, provided by joinASM\n"
+    << "\t-s, --scaffolds FILE  Output FASTA file\n"
+    << "\t-s, --filerSize INT   Size of the stretch of Ns between the sequences (default: 100)\n";
+}
 
 
-std::string complement_fast(std::string &DNAseq){
+void complement (std::string &DNAseq){
 
-	reverse(DNAseq.begin(), DNAseq.end());
-	for (size_t i = 0; i < DNAseq.length(); ++i){
-        switch (DNAseq[i]){
-        case 'A':
-            DNAseq[i] = 'T';
-            break;    
-        case 'C':
-            DNAseq[i] = 'G';
-            break;
-        case 'G':
-            DNAseq[i] = 'C';
-            break;
-        case 'T':
-            DNAseq[i] = 'A';
-            break;
+    reverse(DNAseq.begin(), DNAseq.end());
+    for (size_t i = 0; i < DNAseq.length(); ++i){
+        switch (DNAseq[i]) {
+            case 'A':
+                DNAseq[i] = 'T';
+                break;    
+            case 'C':
+                DNAseq[i] = 'G';
+                break;
+            case 'G':
+                DNAseq[i] = 'C';
+                break;
+            case 'T':
+                DNAseq[i] = 'A';
+                break;
+            default:
+                std::cerr << "Error! Unknown nucleotide '" << DNAseq[i] << "'.";
+                exit(EXIT_FAILURE);
         }
     }
-
-	return DNAseq;
-
 }
-std::string complement(std::string &dna){
-    std::string rev="";
 
-	for(int i=1;i<=dna.length();i++){
+void read_fasta (std::map < std::string, std::string > &contigs, std::string &contig_fasta) {
 
-       char nucleotide=dna[dna.length()-i];
+    std::ifstream ctg_fasta(contig_fasta.c_str());
+    if (! ctg_fasta.is_open()) {
+        std::cerr << "Error!  Cannot open file '" << contig_fasta << "'" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
-       switch (nucleotide){
+    std::string ctg_line, ctg_name, ctg_seq;
 
-		   case 'A': rev=rev+"T"; break;
-		   case 'C': rev=rev+"G"; break;
-		   case 'G': rev=rev+"C"; break;
-		   case 'T': rev=rev+"A"; break;
-       }
+    while (getline(ctg_fasta, ctg_line)) {
+        if (! ctg_line.empty()) {
+            if (ctg_line[0] == '>') {
+                if (! ctg_seq.empty()) {
+                    contigs[ctg_name] = ctg_seq;
+                }
+                ctg_name = ctg_line.substr(1);
+                ctg_seq.clear();
+            }
+            else {
+                ctg_seq += ctg_line;
+            }
+        }
+    }
+    if (! ctg_seq.empty()) {
+        contigs[ctg_name] = ctg_seq;
+    }
 
-	   if(i%100000 == 0) std::cout <<i<<std::endl;
+    ctg_fasta.close();
+    std::cout << "Read " << contigs.size() << " contigs.\n";
+}
 
-     }
-	 return rev;
+void write_fasta_sequence (int id, std::string &sequence, std::ofstream &file) {
+    file << ">scaff_" << id << "\n";
+    for (size_t i = 0; i <= sequence.length() / line_len; ++i) {
+        file << sequence.substr(i * line_len, line_len) << "\n";
+    }
 }
 
 int main (int argc, char* argv[]){
 
-    std::string contig_fasta = argv[1];
-    std::string scaffolds = argv[2];
-    std::string scaffolds_fasta = argv[3];
-	
-    std::ifstream ctg_fasta(contig_fasta.c_str());
-    std::ifstream scaff(scaffolds.c_str());
-    std::ofstream scaff_fasta(scaffolds_fasta.c_str(), std::ofstream::out);	
+    if (argc < 1) {
+        show_usage(argv[0]);
+        return EXIT_FAILURE;
+    }
 
-    std::map<std::string,std::string> contigs;
+    std::string contigs_file_name;
+    std::string joins_file_name;
+    std::string scaffolds_file_name;
+    size_t filler_size;
 
-    std::string ctg_name, ctg_seq = "";
-	while(getline(ctg_fasta,ctg_name)){
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if ((arg == "-h") || (arg == "--help")) {
+            show_usage(argv[0]);
+            return EXIT_SUCCESS;
+        } else if ((arg == "-c") || (arg == "--contigs")){
+            contigs_file_name = argv[++i];
+        } else if ((arg == "-j") || (arg == "--joins")){
+            joins_file_name = argv[++i];
+        } else if ((arg == "-s") || (arg == "--scaffolds")){
+            scaffolds_file_name = argv[++i];
+        } else if ((arg == "-f") || (arg == "--fillerSize")){
+            filler_size = std::atoi(argv[++i]);
+        } else {
+            show_usage(argv[0]);
+            return EXIT_FAILURE;
+        }
+    }
 
-		getline(ctg_fasta,ctg_seq);
-		contigs.insert(std::pair<std::string,std::string>(ctg_name.substr(1),ctg_seq));
+    std::ifstream scaff(joins_file_name.c_str());
+    std::ofstream scaff_fasta(scaffolds_file_name.c_str(), std::ofstream::out);	
+    if (! scaff.is_open()) {
+        std::cerr << "Error!  Cannot open file '" << joins_file_name << "'" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if (! scaff_fasta.is_open()) {
+        std::cerr << "Error!  Cannot open file '" << scaffolds_file_name << "'" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
-	}
+    std::map < std::string, std::string > contigs;
+    read_fasta(contigs, contigs_file_name);
 
+    std::string ctg_seq;
     std::string scaffold_composition;
-	int scaff_number = 0;
-    std::string scaff_seq = "";
-	while(getline(scaff,scaffold_composition)){
+    std::string scaff_seq;
+    std::string scaff_gap('N', filler_size);
 
-		scaff_number++;
+    unsigned int n_scaffolds;
+    for (n_scaffolds = 1; getline(scaff, scaffold_composition); ++n_scaffolds) {
 
         std::istringstream ss(scaffold_composition);
         std::string contig_complete;
-		char sens;
+        char strand;
         std::string contig;
+        unsigned long int start, end;
 
-		while(getline(ss, contig_complete, ';')) {
-			
-			if(contig_complete.length() > 0){
+        while (getline(ss, contig_complete, ';')) {
 
-				sens = contig_complete[0];
-				contig = contig_complete.substr(1);
-                std::cout << sens <<" "<< contig << std::endl;
-        try {
-          ctg_seq = contigs.at(contig);
+            if (! contig_complete.empty()) {
+
+                std::stringstream splitstream (contig_complete);
+                splitstream >> strand >> contig >> start >> end;
+
+                // C++ is 0-based
+                --start;
+                --end;
+
+                try {
+                    ctg_seq = contigs.at(contig);
+                }
+                catch (const std::out_of_range& oor) {
+                    std::cerr << "Cannot find contig '" << contig << "'.\nContigs should be in (first ten)";
+                    unsigned int i = 0;
+                    for (auto &c: contigs) {
+                        std::cerr << " '" << c.first << "'";
+                        ++i;
+                        if (i >= 10) break;
+                    }
+                    std::cerr << "...\nExiting now.\n";
+                    exit(EXIT_FAILURE);
+                }
+
+                if (! scaff_seq.empty()) {
+                    scaff_seq.append(scaff_gap);
+                }
+
+                ctg_seq.substr(start, end - start + 1);
+                if (strand == '-') {
+                    complement(ctg_seq);
+                }
+                scaff_seq.append(ctg_seq);
+            }
         }
-        catch (const std::out_of_range& oor) {
-          std::cerr << "Cannot find contig '" << contig << "'.\nContigs should be in (first ten)";
-          unsigned int i = 0;
-          for (auto &c: contigs) {
-            std::cerr << " '" << c.first << "'";
-            ++i;
-            if (i >= 10) break;
-          }
-          std::cerr << "...\nExiting now.\n";
-          return 1;
+
+        write_fasta_sequence(n_scaffolds + 1, scaff_seq, scaff_fasta);
+        scaff_seq.clear();
+
+        if (n_scaffolds % 100 == 0) {
+            std::cout << n_scaffolds << " lines read.\r" << std::flush;
         }
+    }
+    std::cout << n_scaffolds << " lines read, done.\n";
 
-				if(scaff_seq.length() > 0){
+    scaff_fasta.close();
+    scaff.close();
 
-					scaff_seq.append(scaff_gap);
-				}
-
-				if(sens == '-')
-					scaff_seq.append(complement_fast(ctg_seq));
-				else 
-					scaff_seq.append(ctg_seq);
-
-			}
-
-		}
-
-
-
-		scaff_fasta << ">scaff_" << scaff_number << std::endl;
-		scaff_fasta << scaff_seq << std::endl;
-		scaff_seq = "";
-
-
-
-	}
-
-
-	scaff_fasta.close();
-	scaff.close();
-	ctg_fasta.close();
-
-
-	 return 0;
+    return 0;
 }

@@ -19,13 +19,26 @@ struct Edge {
   }
 
   bool operator== (const Edge &edge) {
-    return ((nodeId == edge.nodeId) && link_type == edge.nodeId);
+    return ((nodeId == edge.nodeId) && (link_type == edge.link_type));
   }
 
   bool operator!= (const Edge &edge) {
     return !(*this == edge);
   }
+
+  friend std::ostream &operator<< (std::ostream &out, Edge &e);
 };
+
+inline std::ostream &operator<< (std::ostream &out, Edge &e) {
+  if (e.is_set()) {
+    out << e.nodeId << "-" << e.link_type;
+  }
+  else {
+    out << "--";
+  }
+  return out;
+}
+
 
 // A node id is a reference to a contig part
 struct NodeId {
@@ -39,9 +52,22 @@ struct NodeId {
   }
 
   bool is_set () {
-    return (contigId == unset_value);
+    return (contigId != unset_value);
   }
+
+  friend std::ostream &operator<< (std::ostream &out, NodeId &n);
 };
+
+inline std::ostream &operator<< (std::ostream &out, NodeId &n) {
+  if (n.is_set()) {
+    out << n.contigId << "-" << n.contigPartId;
+  }
+  else {
+    out << "--";
+  }
+  return out;
+}
+
 
 // A node is a reference to a contig part, and a set of edges
 struct Node: public NodeId {
@@ -52,7 +78,7 @@ struct Node: public NodeId {
   int get_n_edges () {
     int n_edges = 0;
     for (Edge &edge: edges) {
-      if (edge.nodeId != unset_value) {
+      if (edge.is_set()) {
         ++n_edges;
       }
     }
@@ -61,7 +87,7 @@ struct Node: public NodeId {
 
   Edge &get_first_edge () {
     for (Edge &edge: edges) {
-      if (edge.nodeId != unset_value) {
+      if (edge.is_set()) {
         return edge;
       }
     }
@@ -69,16 +95,33 @@ struct Node: public NodeId {
     exit(EXIT_FAILURE);
   }
 
-  Edge &get_other_edge (Edge &edge1) {
-    for (Edge &edge2: edges) {
-      if ((edge2.nodeId != unset_value) && (edge1 != edge2)) {
-        return edge2;
+  Edge &get_other_edge (size_t nodeId, Link_types link_type) {
+    for (Edge &edge: edges) {
+      if ((edge.nodeId != nodeId) || (edge.link_type != link_type)) {
+        return edge;
       }
     }
-    std::cerr << "Error! Trying to find the other edge whereas node seems to contain more than 2 edges.\n";
+    std::cerr << "Error! Trying to find the other edge whereas node seems to contain less than 2 edges.\n";
     exit(EXIT_FAILURE);
   }
+
+  friend std::ostream &operator<< (std::ostream &out, Node &n);
 };
+
+inline std::ostream &operator<< (std::ostream &out, Node &n) {
+  if (n.is_set()) {
+    out << static_cast < NodeId& > (n);
+    for (Edge &e: n.edges) {
+      if (e.is_set()) {
+        out << " -> " << e;
+      }
+    }
+  }
+  else {
+    out << "--";
+  }
+  return out;
+}
 
 
 struct Graph {
