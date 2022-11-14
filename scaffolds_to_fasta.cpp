@@ -181,7 +181,7 @@ int main (int argc, char* argv[]){
             }
         }
 
-        write_fasta_sequence(n_scaffolds + 1, scaff_seq, scaff_fasta);
+        write_fasta_sequence(n_scaffolds, scaff_seq, scaff_fasta);
         scaff_seq.clear();
 
         if (n_scaffolds % 100 == 0) {
