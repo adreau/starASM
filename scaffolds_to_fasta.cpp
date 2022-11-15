@@ -17,7 +17,7 @@ static void show_usage(char *name) {
     << "\t-c, --contigs   FILE  Input contigs FASTA file\n"
     << "\t-j, --joins     FILE  Input join file, provided by joinASM\n"
     << "\t-s, --scaffolds FILE  Output FASTA file\n"
-    << "\t-s, --filerSize INT   Size of the stretch of Ns between the sequences (default: 100)\n";
+    << "\t-f, --filerSize INT   Size of the stretch of Ns between the sequences (default: 100)\n";
 }
 
 
@@ -86,7 +86,7 @@ void write_fasta_sequence (int id, std::string &sequence, std::ofstream &file) {
 
 int main (int argc, char* argv[]){
 
-    if (argc < 1) {
+    if (argc < 2) {
         show_usage(argv[0]);
         return EXIT_FAILURE;
     }
@@ -132,7 +132,7 @@ int main (int argc, char* argv[]){
     std::string ctg_seq;
     std::string scaffold_composition;
     std::string scaff_seq;
-    std::string scaff_gap('N', filler_size);
+    std::string scaff_gap(filler_size, 'N');
 
     unsigned int n_scaffolds;
     for (n_scaffolds = 1; getline(scaff, scaffold_composition); ++n_scaffolds) {
@@ -173,6 +173,10 @@ int main (int argc, char* argv[]){
                     scaff_seq.append(scaff_gap);
                 }
 
+                if (end >= ctg_seq.size()) {
+                    std::cerr << "Error!  Contig '" << contig << "' has size " << ctg_seq.size() << ", but sub-sequence " << (start+1) << "-" << (end+1) << " is requested.\n";
+                    exit(EXIT_FAILURE);
+                }
                 ctg_seq = ctg_seq.substr(start, end - start + 1);
                 if (strand == '-') {
                     complement(ctg_seq);
