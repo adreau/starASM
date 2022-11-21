@@ -11,6 +11,12 @@ struct Interval {
     return end - begin + 1;
   }
 
+  unsigned long int get_overlap (Interval &i) {
+    int overlap = std::max(end, i.end) - std::min(begin, i.begin);
+    if (overlap >= 0) return overlap;
+    return 0;
+  }
+
   unsigned long int get_distance (Interval &i) {
     return std::min(abs(begin - i.end), abs(end - i.begin));
   }

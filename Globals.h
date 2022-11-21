@@ -11,7 +11,7 @@ enum Link_types { BB = 0, BE = 1, EB = 2, EE = 3 };
 static const Link_types reverse_link_type[] = {Link_types::BB, Link_types::EB, Link_types::BE, Link_types::EE};
 
 struct Globals {
-  static int               pair_reads_length;
+  static unsigned long int min_overlap;
   static float             beginning_ratio;
   static unsigned long int window;
   static unsigned long int max_contig_distance;

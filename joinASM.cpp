@@ -23,7 +23,7 @@ static void show_usage(char *name) {
     << "\t-a, --arcsCondition   INT   Condition used for connecting two contigs; values{1..8} (default: " << Globals::condition << ", lower is more strict) \n"
     << "\t-r, --nReads          INT   Min number of common barcodes to get a links (default: " << Globals::min_n_reads << ")\n"
     << "\t-b, --begRatio        FLOAT Ratio of the contig size that is considered as the beginning part (default: " << Globals::beginning_ratio << ", should be less than 0.5)\n"
-    << "\t-p, --pairReadsLength INT   ??? (default: " << Globals::pair_reads_length << ")\n"
+    << "\t-o, --minOverlap      INT   Minimum overlap between a molecule and a contig (default: " << Globals::min_overlap << ")\n"
     << "\t-m, --maxContigDist   INT   merge contigs if they are separated by not more that N bp (default: " << Globals::max_contig_distance << ")\n"
     << "\t-c, --contigs         FILE  Contig bed file name (result of splitASM) \n"
     << "\t-s, --scaffolds       FILE  Output scaffolds file name \n"
@@ -121,7 +121,7 @@ int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < 
 }
 
 // Find the number of common barcodes between contig ends
-void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids){
+void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids){
 
   std::ifstream molecule_file (Globals::molecule_file_name.c_str());
   std::string molecule_line, barcode, ctg, prevCtg;
@@ -130,6 +130,7 @@ void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < 
   std::unordered_map < std::string, unsigned long int > barcode_to_id;
   unsigned int n_barcodes_begin  = 0;
   unsigned int n_barcodes_end    = 0;
+  unsigned int n_barcodes_other  = 0;
   unsigned int n_barcodes_unused = 0;
   size_t ctg_id, prevCtg_id = 0;
 
@@ -159,6 +160,7 @@ void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < 
       auto pos = contig_ids.find(ctg);
       if (pos == contig_ids.end()) {
         unseen_ctgs.insert(ctg);
+        ++n_barcodes_unused;
         continue;
       }
       ctg_id     = pos->second;
@@ -166,18 +168,27 @@ void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < 
       prevCtg_id = ctg_id;
     }
 
+    Interval molecule_interval (beg_pos, end_pos);
     for (ContigPart &contigPart: contigs[ctg_id].contigParts) {
-      // This is the condition to set a barcode to the beginning of a contig part
-      if ((beg_pos >= contigPart.begin) && (beg_pos <= contigPart.begin + std::min(Globals::window, contigPart.getSize() / 2)) &&
-          (end_pos <= contigPart.begin + contigPart.getSize() * (1 - Globals::beginning_ratio))) {
-        contigPart.add_beg_molecule(barcode_id);
-        ++n_barcodes_begin;
-      }
-      // This is the condition to set a barcode to the end of a contig part
-      else if ((beg_pos >= contigPart.begin + contigPart.getSize() * Globals::beginning_ratio) && (beg_pos <= contigPart.end - Globals::pair_reads_length) &&
-          (end_pos >= contigPart.end - std::min(Globals::window, contigPart.getSize() / 2))) {
-        contigPart.add_end_molecule(barcode_id);
-        ++n_barcodes_end;
+      if (contigPart.get_overlap(molecule_interval) >= Globals::min_overlap) {
+        // This is the condition to set a barcode to the beginning of a contig part
+        if ((beg_pos >= contigPart.begin) &&
+            (beg_pos <= contigPart.begin + std::min(Globals::window, contigPart.getSize() / 2)) &&
+            (end_pos <= contigPart.begin + contigPart.getSize() * (1 - Globals::beginning_ratio))) {
+          contigPart.add_beg_molecule(barcode_id);
+          ++n_barcodes_begin;
+        }
+        // This is the condition to set a barcode to the end of a contig part
+        else if ((end_pos <= contigPart.end) &&
+            (beg_pos >= contigPart.begin + contigPart.getSize() * Globals::beginning_ratio) && 
+            (end_pos >= contigPart.end - std::min(Globals::window, contigPart.getSize() / 2))) {
+          contigPart.add_end_molecule(barcode_id);
+          ++n_barcodes_end;
+        }
+        else {
+          contigPart.add_other_molecule(barcode_id);
+          ++n_barcodes_other;
+        }
       }
       else {
         ++n_barcodes_unused;
@@ -186,7 +197,10 @@ void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < 
     if (n_lines % 10000000 == 0) std::cout << n_lines << " lines read.\r" << std::flush;
   }
   std::cout << n_lines << " lines read.\n";
-  std::cout << n_barcodes_begin << " anchored on the left part, " << n_barcodes_end << " anchored on the right part, and " << n_barcodes_unused << " unused.\n";
+  std::cout << n_barcodes_begin << " anchored on the left part, " <<
+    n_barcodes_end << " anchored on the right part, " <<
+    (n_barcodes_begin + n_barcodes_end + n_barcodes_other) << " anchored in general, and " <<
+    n_barcodes_unused << " unused.\n";
   std::cout << barcode_to_id.size() << " different barcodes seen.\n";
 
   if (! unseen_ctgs.empty()) {
@@ -198,9 +212,13 @@ void add_molecules_to_contigs_extremites(Contigs &contigs, std::unordered_map < 
     }
   }
 
-  for (Contig &contig: contigs) {
+  std::cout << "Sorting barcodes:\n";
+  for (size_t i = 0; i < contigs.size(); ++i) {
+    Contig &contig = contigs[i];
     contig.sort_barcodes();
+    if (i % 100 == 0) std::cout << "\tContig #" << i << " / " << contigs.size() << ".\r" << std::flush;
   }
+  std::cout << "\tContig #" << contigs.size() << " / " << contigs.size() << ".\n";
 }
 
 void create_nodes (Contigs &contigs, Graph &graph) {
@@ -213,9 +231,39 @@ void create_nodes (Contigs &contigs, Graph &graph) {
   }
 }
 
+void create_cis_arcs (Contigs &contigs, Graph &graph) {
 
-void create_arcs (Contigs &contigs, Graph &graph) {
+  std::cout << "Reconnecting split contigs.\n";
+  size_t nodeId = 0;
+  unsigned int n_edges = 0;
+  unsigned int n_possible_edges = 0;
+  for (size_t contigId = 0; contigId < contigs.size(); ++contigId) {
+    Contig &contig = contigs[contigId];
+    for (size_t contigPartId = 0; contigPartId < contig.contigParts.size() - 1; ++contigPartId) {
+      ContigPart &contigPart1 = contig.contigParts[contigPartId];
+      ContigPart &contigPart2 = contig.contigParts[contigPartId + 1];
+      assert(graph.nodes[nodeId].contigId       == contigId);
+      assert(graph.nodes[nodeId].contigPartId   == contigPartId);
+      assert(graph.nodes[nodeId+1].contigId     == contigId);
+      assert(graph.nodes[nodeId+1].contigPartId == contigPartId + 1);
+      if (intersectMoleculesSize(contigPart1.all_barcodes, contigPart2.all_barcodes) >= Globals::min_n_reads) {
+        graph.add_edge(nodeId, nodeId + 1, Link_types::EB);
+        ++n_edges;
+      }
+      if (nodeId % 100 == 0) std::cout << "\tNode #" << nodeId << " / " << graph.nodes.size() << ".\r" << std::flush;
+      ++nodeId;
+      ++n_possible_edges;
+    }
+    ++nodeId;
+  }
+  std::cout << "\tNode #" << graph.nodes.size() << " / " << graph.nodes.size() << ".\n";
+  std::cout << "\t" << n_edges << " edges added (out of " << n_possible_edges << " possible edges).\n";
+}
 
+
+void create_trans_arcs (Contigs &contigs, Graph &graph) {
+
+  std::cout << "Connecting distant nodes.\n";
   size_t nodeId1 = 0;
   size_t nodeId2 = 0;
   unsigned int n_edges = 0;
@@ -256,12 +304,17 @@ void create_arcs (Contigs &contigs, Graph &graph) {
         }
         contigPartId2 = 0;
       }
-      if (nodeId1 % 100 == 0) std::cout << "Node #" << nodeId1 << " / " << graph.nodes.size() << ".\r" << std::flush;
+      if (nodeId1 % 100 == 0) std::cout << "\tNode #" << nodeId1 << " / " << graph.nodes.size() << ".\r" << std::flush;
       ++nodeId1;
     }
   }
-  std::cout << "Node #" << graph.nodes.size() << " / " << graph.nodes.size() << ".\n";
-  std::cout << n_edges << " edges found (out of " << (2 * graph.nodes.size() * (graph.nodes.size() - 1)) << " possible edges).\n";
+  std::cout << "\tNode #" << graph.nodes.size() << " / " << graph.nodes.size() << ".\n";
+  std::cout << "\t" << n_edges << " edges added (out of " << (2 * graph.nodes.size() * (graph.nodes.size() - 1)) << " possible edges).\n";
+}
+
+void create_arcs (Contigs &contigs, Graph &graph) {
+  create_cis_arcs(contigs, graph);
+  create_trans_arcs(contigs, graph);
 }
 
 
@@ -438,7 +491,6 @@ void merge_close_contigs (Graph &graph, Contigs &contigs, Scaffolds &scaffolds) 
       ContigPart   &prev_contig_part   = get_contig_part(contigs, prev_scaffold_part.nodeId);
       ScaffoldPart &next_scaffold_part = scaffold[scaffold_part_id];
       ContigPart   &next_contig_part   = get_contig_part(contigs, next_scaffold_part.nodeId);
-std::cout << "Comparing " << prev_scaffold_part << " -> " << prev_contig_part << "  vs  " << next_scaffold_part << " -> " << next_contig_part << "\n";
       if ((prev_scaffold_part.nodeId.contigId == next_scaffold_part.nodeId.contigId) &&
           (prev_scaffold_part.is_forward == next_scaffold_part.is_forward) &&
           (prev_contig_part.get_distance(next_contig_part) <= Globals::max_contig_distance)) {
@@ -477,7 +529,7 @@ void print_scaffold (Scaffolds &scaffolds, Contigs &contigs) {
 
 
 // Global values
-int               Globals::pair_reads_length   =   300;
+unsigned long int Globals::min_overlap         =   300;
 float             Globals::beginning_ratio     =   0.4;
 unsigned long int Globals::window              = 10000;
 unsigned long int Globals::max_contig_distance = 20000;
@@ -508,8 +560,8 @@ int main (int argc, char* argv[]) {
       Globals::min_n_reads = std::stoi(argv[++i]);
     } else if ((arg == "-b") || (arg == "--begRatio")){
       Globals::beginning_ratio = std::stof(argv[++i]);
-    } else if ((arg == "-p") || (arg == "--pairReadsLength")){
-      Globals::pair_reads_length = std::stoi(argv[++i]);
+    } else if ((arg == "-o") || (arg == "--minOverlap")){
+      Globals::min_overlap = std::stoi(argv[++i]);
     } else if ((arg == "-m") || (arg == "--maxContigDist")){
       Globals::max_contig_distance = std::stoi(argv[++i]);
     } else if ((arg == "-c") || (arg == "--contigs")){
