@@ -423,10 +423,8 @@ void remove_bifurcations (Graph &graph) {
 size_t find_first_scaffold_end (Graph &graph, size_t nodeIdStart, std::vector < bool > &seen_nodes) {
 
   for (size_t nodeId = nodeIdStart; nodeId < graph.nodes.size(); ++nodeId) {
-    if (! seen_nodes[nodeId]) {
-      if (graph.nodes[nodeId].get_n_edges() < 2) {
-        return nodeId;
-      }
+    if ((! seen_nodes[nodeId]) && (graph.nodes[nodeId].get_n_edges() < 2)) {
+      return nodeId;
     }
   }
   return graph.nodes.size();
@@ -437,7 +435,7 @@ void find_scaffolds (Graph &graph, Scaffolds &scaffolds) {
 
   size_t n_nodes = graph.nodes.size();
   std::vector < bool > seen_nodes (n_nodes, false);
-  for (size_t nodeIdStart = 0; nodeIdStart < n_nodes; nodeIdStart = find_first_scaffold_end(graph, nodeIdStart, seen_nodes)) {
+  for (size_t nodeIdStart = find_first_scaffold_end(graph, 0, seen_nodes); nodeIdStart < n_nodes; nodeIdStart = find_first_scaffold_end(graph, ++nodeIdStart, seen_nodes)) {
     size_t prev_node_id = nodeIdStart;
     Node &node = graph.nodes[nodeIdStart];
     seen_nodes[nodeIdStart] = true;
@@ -451,9 +449,12 @@ void find_scaffolds (Graph &graph, Scaffolds &scaffolds) {
       while (true) {
         size_t nodeId = edge.nodeId;
         Node &node = graph.nodes[nodeId];
-        is_forward = (((edge.link_type == Link_types::BB) || (edge.link_type == Link_types::EB)) == is_forward);
+        // If the edge is forward, the next edge is forward iff the link starts with E.
+        // If the edge is reverse, the next edge is reverse iff the link starts with B.
+        is_forward = ((edge.link_type == Link_types::EB) || (edge.link_type == Link_types::EE));
         scaffolds.back().emplace_back(node, is_forward);
         seen_nodes[nodeId] = true;
+        // We reached the end of the chain
         if (node.get_n_edges() == 1) {
           break;
         }
@@ -529,16 +530,16 @@ void print_scaffold (Scaffolds &scaffolds, Contigs &contigs) {
 
 
 // Global values
-unsigned long int Globals::min_overlap         =   300;
-float             Globals::beginning_ratio     =   0.4;
-unsigned long int Globals::window              = 10000;
-unsigned long int Globals::max_contig_distance = 20000;
-int               Globals::condition           =     1;
-int               Globals::min_n_reads         =     3;
-std::string       Globals::contig_file_name    =    "";
-std::string       Globals::graph_file_name     =    "";
-std::string       Globals::molecule_file_name  =    "";
-std::string       Globals::scaffold_file_name  =    "";
+unsigned long int Globals::min_overlap         =    300;
+float             Globals::beginning_ratio     =    0.4;
+unsigned long int Globals::window              = 100000;
+unsigned long int Globals::max_contig_distance =  20000;
+int               Globals::condition           =      1;
+int               Globals::min_n_reads         =      3;
+std::string       Globals::contig_file_name    =     "";
+std::string       Globals::graph_file_name     =     "";
+std::string       Globals::molecule_file_name  =     "";
+std::string       Globals::scaffold_file_name  =     "";
 
 
 int main (int argc, char* argv[]) {
