@@ -575,6 +575,10 @@ int main (int argc, char* argv[]) {
     }
   }
 
+  if (Globals::molecule_file_name.empty()) {
+    std::cerr << "Error!  Molecule file missing.\nExiting.\n";
+    exit(EXIT_FAILURE);
+  }
   Contigs contigs;
   std::unordered_map < std::string, size_t > contig_ids;
   create_contigs(contigs, contig_ids);
