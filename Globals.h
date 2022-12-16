@@ -21,6 +21,7 @@ struct Globals {
   static std::string       graph_file_name;
   static std::string       molecule_file_name;
   static std::string       scaffold_file_name;
+  static std::string       mapping_file_name;
 };
 
 #endif

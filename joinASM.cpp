@@ -24,7 +24,8 @@ static void show_usage(char *name) {
     << "\t-r, --nReads          INT   Min number of common barcodes to get a links (default: " << Globals::min_n_reads << ")\n"
     << "\t-b, --begRatio        FLOAT Ratio of the contig size that is considered as the beginning part (default: " << Globals::beginning_ratio << ", should be less than 0.5)\n"
     << "\t-o, --minOverlap      INT   Minimum overlap between a molecule and a contig (default: " << Globals::min_overlap << ")\n"
-    << "\t-m, --maxContigDist   INT   merge contigs if they are separated by not more that N bp (default: " << Globals::max_contig_distance << ")\n"
+    << "\t-m, --maxContigDist   INT   Merge contigs if they are separated by not more that N bp (default: " << Globals::max_contig_distance << ")\n"
+    << "\t-p, --mapping         FILE  Log where the molecule map with respect to the contigs (optional)\n"
     << "\t-c, --contigs         FILE  Contig bed file name (result of splitASM) \n"
     << "\t-s, --scaffolds       FILE  Output scaffolds file name \n"
     << "\t-g, --graph           FILE  Output gfa file name \n"
@@ -121,7 +122,7 @@ int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < 
 }
 
 // Find the number of common barcodes between contig ends
-void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids){
+void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids) {
 
   std::ifstream molecule_file (Globals::molecule_file_name.c_str());
   std::string molecule_line, barcode, ctg, prevCtg;
@@ -137,6 +138,12 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
   if (! molecule_file.is_open()){
       std::cerr << "Error!  Cannot open file '" << Globals::molecule_file_name << "'" << std::endl;
       exit(EXIT_FAILURE);
+  }
+
+
+  std::ofstream mapping_file;
+  if (! Globals::mapping_file_name.empty()) {
+    mapping_file.open(Globals::mapping_file_name);
   }
 
   long unsigned int n_lines;
@@ -177,6 +184,9 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
             (end_pos <= contigPart.begin + contigPart.getSize() * (1 - Globals::beginning_ratio))) {
           contigPart.add_beg_molecule(barcode_id);
           ++n_barcodes_begin;
+          if (! Globals::mapping_file_name.empty()) {
+            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.begin << "\t" << contigPart.end << "\tbegin\n";
+          }
         }
         // This is the condition to set a barcode to the end of a contig part
         else if ((end_pos <= contigPart.end) &&
@@ -184,17 +194,23 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
             (end_pos >= contigPart.end - std::min(Globals::window, contigPart.getSize() / 2))) {
           contigPart.add_end_molecule(barcode_id);
           ++n_barcodes_end;
+          if (! Globals::mapping_file_name.empty()) {
+            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.begin << "\t" << contigPart.end << "\tend\n";
+          }
         }
         else {
           contigPart.add_other_molecule(barcode_id);
           ++n_barcodes_other;
+          if (! Globals::mapping_file_name.empty()) {
+            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.begin << "\t" << contigPart.end << "\tother\n";
+          }
         }
       }
       else {
         ++n_barcodes_unused;
       }
     }
-    if (n_lines % 10000000 == 0) std::cout << n_lines << " lines read.\r" << std::flush;
+    if (n_lines % 1000000 == 0) std::cout << n_lines << " lines read.\r" << std::flush;
   }
   std::cout << n_lines << " lines read.\n";
   std::cout << n_barcodes_begin << " anchored on the left part, " <<
@@ -540,6 +556,7 @@ std::string       Globals::contig_file_name    =     "";
 std::string       Globals::graph_file_name     =     "";
 std::string       Globals::molecule_file_name  =     "";
 std::string       Globals::scaffold_file_name  =     "";
+std::string       Globals::mapping_file_name   =     "";
 
 
 int main (int argc, char* argv[]) {
@@ -571,6 +588,8 @@ int main (int argc, char* argv[]) {
       Globals::graph_file_name = argv[++i];
     } else if ((arg == "-s") || (arg == "--scaffolds")){
       Globals::scaffold_file_name = argv[++i];
+    } else if ((arg == "-p") || (arg == "--mapping")){
+      Globals::mapping_file_name = argv[++i];
     } else {
       Globals::molecule_file_name = argv[i++];
     }
