@@ -8,10 +8,10 @@
 #include <unordered_set>
 #include <cassert>
 
-#include "Globals.h"
-#include "Contig.h"
-#include "Graph.h"
-#include "Scaffold.h"
+#include "globals.h"
+#include "contig.h"
+#include "graph.h"
+#include "scaffold.h"
 
 
 static void show_usage(char *name) {

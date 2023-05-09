@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "Globals.h"
-#include "Interval.h"
+#include "globals.h"
+#include "interval.h"
 
 
 // Input contigs are usually are split by splitASM
