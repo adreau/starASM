@@ -17,7 +17,7 @@
 
 static void show_usage(char *name) {
 
-  std::cerr << "Usage: " << name << " <option(s)> MOLECULE FILE \n"
+  std::cerr << "Usage: " << name << " <option(s)>\n"
     << "Options:\n"
     << "\t-h, --help                  Show this help message\n"
     << "\t-w, --window          INT   Window size for barcode consideration (default: " << Globals::window << ") \n"
@@ -26,6 +26,7 @@ static void show_usage(char *name) {
     << "\t-b, --begRatio        FLOAT Ratio of the contig size that is considered as the beginning part (default: " << Globals::beginning_ratio << ", should be less than 0.5)\n"
     << "\t-v, --minOverlap      INT   Minimum overlap between a molecule and a contig (default: " << Globals::min_overlap << ")\n"
     << "\t-m, --maxContigDist   INT   Merge contigs if they are separated by not more that N bp (default: " << Globals::max_contig_distance << ")\n"
+    << "\t-i, --molecule        FILE  Input molecule file\n"
     << "\t-p, --mapping         FILE  Log where the molecule map with respect to the contigs (optional)\n"
     << "\t-c, --joins           FILE  Contig bed file name (result of splitASM) \n"
     << "\t-f, --contigs         FILE  Input contigs in FASTA format\n"
@@ -595,6 +596,8 @@ int main (int argc, char* argv[]) {
       Globals::beginning_ratio = std::stof(argv[++i]);
     } else if ((arg == "-v") || (arg == "--minOverlap")){
       Globals::min_overlap = std::stoi(argv[++i]);
+    } else if ((arg == "-l") || (arg == "--fillerSize")){
+      Globals::filler_size = std::atoi(argv[++i]);
     } else if ((arg == "-m") || (arg == "--maxContigDist")){
       Globals::max_contig_distance = std::stoi(argv[++i]);
     } else if ((arg == "-c") || (arg == "--joins")){
@@ -609,10 +612,11 @@ int main (int argc, char* argv[]) {
       Globals::fasta_file_name = argv[++i];
     } else if ((arg == "-f") || (arg == "--contigs")){
       Globals::contigs_file_name = argv[++i];
-    } else if ((arg == "-l") || (arg == "--fillerSize")){
-      Globals::filler_size = std::atoi(argv[++i]);
+    } else if ((arg == "-i") || (arg == "--molecules")){
+      Globals::molecule_file_name = argv[++i];
     } else {
-      Globals::molecule_file_name = argv[i++];
+      std::cerr << "Error!  Parameter '" << argv[i] << "' is not understood.\nExiting.\n";
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -620,8 +624,12 @@ int main (int argc, char* argv[]) {
     std::cerr << "Error!  Molecule file missing.\nExiting.\n";
     exit(EXIT_FAILURE);
   }
+  if (Globals::contigs_file_name.empty()) {
+    std::cerr << "Error!  Input contigs FASTA file missing.\nExiting.\n";
+    exit(EXIT_FAILURE);
+  }
   if (Globals::fasta_file_name.empty()) {
-    std::cerr << "Error!  Input contig FASTA file missing.\nExiting.\n";
+    std::cerr << "Error!  Output scaffold FASTA file missing.\nExiting.\n";
     exit(EXIT_FAILURE);
   }
   Contigs contigs;
