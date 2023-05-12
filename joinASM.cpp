@@ -504,26 +504,28 @@ ContigPart &get_contig_part (Contigs &contigs, NodeId &nodeId) {
   return contigs[nodeId.contigId].contigParts[nodeId.contigPartId];
 }
 
-// Merge two consecutive contigs if the belong to the same scaffold, have been previously split, and are not too distant from each other
-void merge_close_contigs (Graph &graph, Contigs &contigs, Scaffolds &scaffolds) {
-
+// Merge two consecutive contigs if they belong to the same scaffold, have been previously split, and are not too distant from each other
+void merge_close_contigs (RefIntervalsSet &refIntervalsSet) {
   unsigned int n_merges = 0;
-  for (Scaffold &scaffold: scaffolds) {
-    for (size_t scaffold_part_id = 1; scaffold_part_id < scaffold.size(); ++scaffold_part_id) {
-      ScaffoldPart &prev_scaffold_part = scaffold[scaffold_part_id-1];
-      ContigPart   &prev_contig_part   = get_contig_part(contigs, prev_scaffold_part.nodeId);
-      ScaffoldPart &next_scaffold_part = scaffold[scaffold_part_id];
-      ContigPart   &next_contig_part   = get_contig_part(contigs, next_scaffold_part.nodeId);
-      if ((prev_scaffold_part.nodeId.contigId == next_scaffold_part.nodeId.contigId) &&
-          (prev_scaffold_part.is_forward == next_scaffold_part.is_forward) &&
-          (prev_contig_part.get_distance(next_contig_part) <= Globals::max_contig_distance)) {
-        next_contig_part.merge(prev_contig_part);
-        prev_contig_part.unset();
+  for (RefIntervals &refIntervals: refIntervalsSet) {
+    size_t i = 0;
+    for (size_t j = 1; j < refIntervals.size(); ++j) {
+      if (refIntervals[i].can_merge(refIntervals[j])) {
+        refIntervals[i].merge(refIntervals[j]);
         ++n_merges;
       }
+      else {
+        ++i;
+        if (i != j) {
+          refIntervals[i] = refIntervals[j];
+        }
+      }
+    }
+    if (i < refIntervals.size()) {
+      refIntervals.erase(refIntervals.begin() + i + 1, refIntervals.end());
     }
   }
-  std::cout << n_merges << " / " << graph.nodes.size() << " contig part merges.\n";
+  std::cout << n_merges << " contig part merges.\n";
 }
 
 
@@ -643,9 +645,9 @@ int main (int argc, char* argv[]) {
   remove_bifurcations(graph);
   Scaffolds scaffolds;
   find_scaffolds(graph, scaffolds);
-  merge_close_contigs(graph, contigs, scaffolds);
   RefIntervalsSet refIntervalsSet;
   scaffold_to_intervals(scaffolds, contigs, refIntervalsSet);
+  merge_close_contigs(refIntervalsSet);
   print_scaffold(refIntervalsSet);
   scaffolds_to_fasta(refIntervalsSet);
 

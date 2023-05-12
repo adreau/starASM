@@ -20,7 +20,7 @@ struct Interval {
     return 0;
   }
 
-  unsigned long int get_distance (Interval &i) {
+  unsigned long int get_distance (const Interval &i) {
     return std::min(abs(start - i.end), abs(end - i.start));
   }
 
@@ -57,6 +57,10 @@ struct RefInterval: public Interval {
   bool strand;
 
   RefInterval (const std::string &r, bool s, unsigned long b, unsigned long e): Interval(b, e), ref(r), strand(s) {}
+
+  bool can_merge (const RefInterval &next) {
+    return ((ref == next.ref) && (strand == next.strand) && (get_distance(next) <= Globals::max_contig_distance));
+  }
 
   friend std::ostream &operator<< (std::ostream &out, RefInterval &e);
 };
