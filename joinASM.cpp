@@ -12,6 +12,7 @@
 #include "contig.h"
 #include "graph.h"
 #include "scaffold.h"
+#include "scaffolds_to_fasta.h"
 
 
 static void show_usage(char *name) {
@@ -23,26 +24,29 @@ static void show_usage(char *name) {
     << "\t-a, --arcsCondition   INT   Condition used for connecting two contigs; values{1..8} (default: " << Globals::condition << ", lower is more strict) \n"
     << "\t-r, --nReads          INT   Min number of common barcodes to get a links (default: " << Globals::min_n_reads << ")\n"
     << "\t-b, --begRatio        FLOAT Ratio of the contig size that is considered as the beginning part (default: " << Globals::beginning_ratio << ", should be less than 0.5)\n"
-    << "\t-o, --minOverlap      INT   Minimum overlap between a molecule and a contig (default: " << Globals::min_overlap << ")\n"
+    << "\t-v, --minOverlap      INT   Minimum overlap between a molecule and a contig (default: " << Globals::min_overlap << ")\n"
     << "\t-m, --maxContigDist   INT   Merge contigs if they are separated by not more that N bp (default: " << Globals::max_contig_distance << ")\n"
     << "\t-p, --mapping         FILE  Log where the molecule map with respect to the contigs (optional)\n"
-    << "\t-c, --contigs         FILE  Contig bed file name (result of splitASM) \n"
-    << "\t-s, --scaffolds       FILE  Output scaffolds file name \n"
-    << "\t-g, --graph           FILE  Output gfa file name \n"
+    << "\t-c, --joins           FILE  Contig bed file name (result of splitASM) \n"
+    << "\t-f, --contigs         FILE  Input contigs in FASTA format\n"
+    << "\t-s, --scaffolds       FILE  Output scaffolds file name\n"
+    << "\t-g, --graph           FILE  Output gfa file name\n"
+    << "\t-o, --scaffolds       FILE  Output FASTA file\n"
+    << "\t-l, --fillerSize      INT   Size of the stretch of Ns between the sequences (default: 100)\n"
     << std::endl;
 }
 
 // Read/store a set of (split) contigs in a bed file.
 void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids){
 
-  std::ifstream contig_file(Globals::contig_file_name.c_str());
+  std::ifstream contig_file(Globals::joins_file_name.c_str());
   std::string contig_line, ctg;
   int pos_beg, pos_end;
   unsigned int n_contigs      = 0;
   unsigned int n_contig_parts = 0;
 
   if (! contig_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::contig_file_name << "'" << std::endl;
+      std::cerr << "Error!  Cannot open file '" << Globals::joins_file_name << "'" << std::endl;
       exit(EXIT_FAILURE);
   }
 
@@ -124,6 +128,7 @@ int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < 
 // Find the number of common barcodes between contig ends
 void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids) {
 
+  std::cerr << "Reading molecule file...\n";
   std::ifstream molecule_file (Globals::molecule_file_name.c_str());
   std::string molecule_line, barcode, ctg, prevCtg;
   unsigned long int beg_pos, end_pos, nReads, barcode_id;
@@ -179,30 +184,30 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
     for (ContigPart &contigPart: contigs[ctg_id].contigParts) {
       if (contigPart.get_overlap(molecule_interval) >= Globals::min_overlap) {
         // This is the condition to set a barcode to the beginning of a contig part
-        if ((beg_pos >= contigPart.begin) &&
-            (beg_pos <= contigPart.begin + std::min(Globals::window, contigPart.getSize() / 2)) &&
-            (end_pos <= contigPart.begin + contigPart.getSize() * (1 - Globals::beginning_ratio))) {
+        if ((beg_pos >= contigPart.start) &&
+            (beg_pos <= contigPart.start + std::min(Globals::window, contigPart.getSize() / 2)) &&
+            (end_pos <= contigPart.start + contigPart.getSize() * (1 - Globals::beginning_ratio))) {
           contigPart.add_beg_molecule(barcode_id);
           ++n_barcodes_begin;
           if (! Globals::mapping_file_name.empty()) {
-            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.begin << "\t" << contigPart.end << "\tbegin\n";
+            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.start << "\t" << contigPart.end << "\tbegin\n";
           }
         }
         // This is the condition to set a barcode to the end of a contig part
         else if ((end_pos <= contigPart.end) &&
-            (beg_pos >= contigPart.begin + contigPart.getSize() * Globals::beginning_ratio) && 
+            (beg_pos >= contigPart.start + contigPart.getSize() * Globals::beginning_ratio) && 
             (end_pos >= contigPart.end - std::min(Globals::window, contigPart.getSize() / 2))) {
           contigPart.add_end_molecule(barcode_id);
           ++n_barcodes_end;
           if (! Globals::mapping_file_name.empty()) {
-            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.begin << "\t" << contigPart.end << "\tend\n";
+            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.start << "\t" << contigPart.end << "\tend\n";
           }
         }
         else {
           contigPart.add_other_molecule(barcode_id);
           ++n_barcodes_other;
           if (! Globals::mapping_file_name.empty()) {
-            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.begin << "\t" << contigPart.end << "\tother\n";
+            mapping_file << "Barcode " << barcode << "\t" << ctg << "\t" << beg_pos << "\t" << end_pos << "\t" << nReads << " reads\t" << ctg << "\t" << contigPart.start << "\t" << contigPart.end << "\tother\n";
           }
         }
       }
@@ -339,7 +344,7 @@ void get_node_name (Contigs &contigs, Graph &graph, size_t nodeId, std::string &
   Node       &node       = graph.nodes[nodeId];
   Contig     &contig     = contigs[node.contigId];
   ContigPart &contigPart = contig.contigParts[node.contigPartId];
-  name = contig.name + "_" + std::to_string(contigPart.begin) + "_" + std::to_string(contigPart.end);
+  name = contig.name + "_" + std::to_string(contigPart.start) + "_" + std::to_string(contigPart.end);
 }
 
 
@@ -357,7 +362,7 @@ void write_graph (Contigs &contigs, Graph &graph) {
 
   for (Contig &contig: contigs) {
     for (ContigPart &contigPart: contig.contigParts) {
-      graph_file << "S" << "\t" << contig.name << "_" << contigPart.begin << "_" << contigPart.end << "\t*\tLN:i:" << contigPart.getSize() << "\n";
+      graph_file << "S" << "\t" << contig.name << "_" << contigPart.start << "_" << contigPart.end << "\t*\tLN:i:" << contigPart.getSize() << "\n";
     }
   }
   for (size_t nodeId1 = 0; nodeId1 < graph.nodes.size(); ++nodeId1) {
@@ -521,26 +526,33 @@ void merge_close_contigs (Graph &graph, Contigs &contigs, Scaffolds &scaffolds) 
 }
 
 
-void print_scaffold (Scaffolds &scaffolds, Contigs &contigs) {
-
-  std::ofstream scaffold_file (Globals::scaffold_file_name.c_str(), std::ofstream::out);
-
-  if (! scaffold_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::scaffold_file_name << "'" << std::endl;
-      exit(EXIT_FAILURE);
-  }
-
+void scaffold_to_intervals (Scaffolds &scaffolds, Contigs &contigs, RefIntervalsSet &refIntervalsSet) {
   for (Scaffold &scaffold: scaffolds) {
+    RefIntervals refIntervals;
     for (ScaffoldPart &scaffold_part: scaffold) {
       Contig     &contig      = get_contig(contigs, scaffold_part.nodeId);
       ContigPart &contig_part = get_contig_part(contigs, scaffold_part.nodeId);
       if (contig_part.is_set()) {
-        scaffold_file << (scaffold_part.is_forward? '+': '-') << contig.name << ' ' << contig_part.begin << ' ' << contig_part.end << ';';
+        refIntervals.emplace_back(contig.name, scaffold_part.is_forward, contig_part.start, contig_part.end);
       }
+    }
+    refIntervalsSet.push_back(refIntervals);
+  }
+}
+
+
+void print_scaffold (RefIntervalsSet &refIntervalsSet) {
+  std::ofstream scaffold_file (Globals::scaffold_file_name, std::ofstream::out);
+  if (! scaffold_file.is_open()){
+      std::cerr << "Error!  Cannot open file '" << Globals::scaffold_file_name << "'" << std::endl;
+      exit(EXIT_FAILURE);
+  }
+  for (auto &refIntervals: refIntervalsSet) {
+    for (auto &refInterval: refIntervals) {
+      scaffold_file << refInterval << ';';
     }
     scaffold_file << '\n';
   }
-
   scaffold_file.close();
 }
 
@@ -552,11 +564,14 @@ unsigned long int Globals::window              = 100000;
 unsigned long int Globals::max_contig_distance =  20000;
 int               Globals::condition           =      1;
 int               Globals::min_n_reads         =      3;
-std::string       Globals::contig_file_name    =     "";
+std::string       Globals::joins_file_name     =     "";
 std::string       Globals::graph_file_name     =     "";
 std::string       Globals::molecule_file_name  =     "";
 std::string       Globals::scaffold_file_name  =     "";
 std::string       Globals::mapping_file_name   =     "";
+std::string       Globals::contigs_file_name   =     "";
+std::string       Globals::fasta_file_name     =     "";
+unsigned int      Globals::filler_size         =    100;
 
 
 int main (int argc, char* argv[]) {
@@ -578,18 +593,24 @@ int main (int argc, char* argv[]) {
       Globals::min_n_reads = std::stoi(argv[++i]);
     } else if ((arg == "-b") || (arg == "--begRatio")){
       Globals::beginning_ratio = std::stof(argv[++i]);
-    } else if ((arg == "-o") || (arg == "--minOverlap")){
+    } else if ((arg == "-v") || (arg == "--minOverlap")){
       Globals::min_overlap = std::stoi(argv[++i]);
     } else if ((arg == "-m") || (arg == "--maxContigDist")){
       Globals::max_contig_distance = std::stoi(argv[++i]);
-    } else if ((arg == "-c") || (arg == "--contigs")){
-      Globals::contig_file_name = argv[++i];
+    } else if ((arg == "-c") || (arg == "--joins")){
+      Globals::joins_file_name = argv[++i];
     } else if ((arg == "-g") || (arg == "--graph")){
       Globals::graph_file_name = argv[++i];
     } else if ((arg == "-s") || (arg == "--scaffolds")){
       Globals::scaffold_file_name = argv[++i];
     } else if ((arg == "-p") || (arg == "--mapping")){
       Globals::mapping_file_name = argv[++i];
+    } else if ((arg == "-o") || (arg == "--scaffolds")){
+      Globals::fasta_file_name = argv[++i];
+    } else if ((arg == "-f") || (arg == "--contigs")){
+      Globals::contigs_file_name = argv[++i];
+    } else if ((arg == "-l") || (arg == "--fillerSize")){
+      Globals::filler_size = std::atoi(argv[++i]);
     } else {
       Globals::molecule_file_name = argv[i++];
     }
@@ -597,6 +618,10 @@ int main (int argc, char* argv[]) {
 
   if (Globals::molecule_file_name.empty()) {
     std::cerr << "Error!  Molecule file missing.\nExiting.\n";
+    exit(EXIT_FAILURE);
+  }
+  if (Globals::fasta_file_name.empty()) {
+    std::cerr << "Error!  Input contig FASTA file missing.\nExiting.\n";
     exit(EXIT_FAILURE);
   }
   Contigs contigs;
@@ -611,7 +636,10 @@ int main (int argc, char* argv[]) {
   Scaffolds scaffolds;
   find_scaffolds(graph, scaffolds);
   merge_close_contigs(graph, contigs, scaffolds);
-  print_scaffold(scaffolds, contigs);
+  RefIntervalsSet refIntervalsSet;
+  scaffold_to_intervals(scaffolds, contigs, refIntervalsSet);
+  print_scaffold(refIntervalsSet);
+  scaffolds_to_fasta(refIntervalsSet);
 
   return EXIT_SUCCESS;
 }

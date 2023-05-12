@@ -1,13 +1,14 @@
-all: scaffolds_to_fasta joinASM
+SRCS=$(wildcard *.cpp)
+OBJS=$(SRCS:.cpp=.o )
 
-scaffolds_to_fasta: scaffolds_to_fasta.cpp
-	g++ -std=c++11 -Wall -o scaffolds_to_fasta scaffolds_to_fasta.cpp
+all: joinASM
 
-joinASM: joinASM.o
-	g++ -std=c++11 -Wall -O3 -o joinASM joinASM.o
+joinASM: $(OBJS)
+	g++ -g -fsanitize=address -std=c++11 -Wall -pedantic -O3 -o joinASM $(OBJS)
 
-joinASM.o: joinASM.cpp contig.h globals.h graph.h scaffold.h
-	g++ -std=c++11 -Wall -O3 -c joinASM.cpp
+%.o: %.cpp
+	g++ -g -fsanitize=address -std=c++11 -Wall -pedantic -O3 -c $< -o $@
+
 
 clean:
 	rm -f *~ *.o

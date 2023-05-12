@@ -1,37 +1,40 @@
 #ifndef DEF_INTERVAL
 #define DEF_INTERVAL
 
+#include <vector>
+#include <string>
+
 struct Interval {
   
-  unsigned long begin, end;
+  unsigned long start, end;
 
-  Interval (unsigned long b, unsigned long e): begin(b), end(e) {}
+  Interval (unsigned long b, unsigned long e): start(b), end(e) {}
 
   unsigned long int getSize () {
-    return end - begin + 1;
+    return end - start + 1;
   }
 
   unsigned long int get_overlap (Interval &i) {
-    int overlap = std::max(end, i.end) - std::min(begin, i.begin);
+    int overlap = std::max(end, i.end) - std::min(start, i.start);
     if (overlap >= 0) return overlap;
     return 0;
   }
 
   unsigned long int get_distance (Interval &i) {
-    return std::min(abs(begin - i.end), abs(end - i.begin));
+    return std::min(abs(start - i.end), abs(end - i.start));
   }
 
   void merge (Interval &i) {
-    begin = std::min(begin, i.begin);
+    start = std::min(start, i.start);
     end   = std::max(end,   i.end);
   }
 
   void unset () {
-    begin = end = 0;
+    start = end = 0;
   }
 
   bool is_set () {
-    return (begin != 0);
+    return (start != 0);
   }
 
   friend std::ostream &operator<< (std::ostream &out, Interval &e);
@@ -39,12 +42,34 @@ struct Interval {
 
 inline std::ostream &operator<< (std::ostream &out, Interval &i) {
   if (i.is_set()) {
-    out << i.begin << "-" << i.end;
+    out << i.start << "-" << i.end;
   }
   else {
     out << "--";
   }
   return out;
 }
+
+
+struct RefInterval: public Interval {
+
+  std::string ref;
+  bool strand;
+
+  RefInterval (const std::string &r, bool s, unsigned long b, unsigned long e): Interval(b, e), ref(r), strand(s) {}
+
+  friend std::ostream &operator<< (std::ostream &out, RefInterval &e);
+};
+
+inline std::ostream &operator<< (std::ostream &out, RefInterval &i) {
+  if (i.is_set()) {
+    out << (i.strand? '+': '-') << i.ref << " " << i.start << " " << i.end;
+  }
+  return out;
+}
+
+using RefIntervals = std::vector < RefInterval >;
+
+using RefIntervalsSet = std::vector < std::vector < RefInterval > >;
 
 #endif

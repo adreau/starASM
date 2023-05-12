@@ -17,11 +17,14 @@ struct Globals {
   static unsigned long int max_contig_distance;
   static int               condition;
   static int               min_n_reads;
-  static std::string       contig_file_name;
+  static std::string       joins_file_name;
+  static std::string       contigs_file_name;
   static std::string       graph_file_name;
   static std::string       molecule_file_name;
   static std::string       scaffold_file_name;
   static std::string       mapping_file_name;
+  static std::string       fasta_file_name;
+  static unsigned int      filler_size;
 };
 
 #endif
