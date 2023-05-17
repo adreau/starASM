@@ -3,6 +3,9 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+
+#include "globals.h"
 
 struct Interval {
   
@@ -73,7 +76,11 @@ inline std::ostream &operator<< (std::ostream &out, RefInterval &i) {
 }
 
 using RefIntervals = std::vector < RefInterval >;
-
 using RefIntervalsSet = std::vector < std::vector < RefInterval > >;
+
+
+void merge_close_contigs (RefIntervalsSet &refIntervalsSet);
+void print_scaffold (RefIntervalsSet &refIntervalsSet);
+
 
 #endif

@@ -3,8 +3,11 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <algorithm>
 
 #include "globals.h"
+#include "node.h"
 #include "interval.h"
 
 
@@ -62,5 +65,13 @@ struct Contig {
 
 
 using Contigs = std::vector < Contig >;
+
+
+void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids);
+void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids);
+int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2);
+Contig &get_contig (Contigs &contigs, NodeId &nodeId);
+ContigPart &get_contig_part (Contigs &contigs, NodeId &nodeId);
+
 
 #endif

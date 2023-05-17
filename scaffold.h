@@ -1,6 +1,9 @@
 #ifndef DEF_SCAFFOLD
 #define DEF_SCAFFOLD
 
+#include "interval.h"
+#include "graph.h"
+
 // A scaffold part is an id to a contig part, and a strand (reversed, or not)
 struct ScaffoldPart {
   NodeId nodeId;
@@ -19,5 +22,9 @@ inline std::ostream &operator<< (std::ostream &out, ScaffoldPart &sp) {
 using Scaffold = std::vector < ScaffoldPart >;
 
 using Scaffolds = std::vector < Scaffold >;
+
+void find_scaffolds (Graph &graph, Scaffolds &scaffolds);
+void scaffold_to_intervals (Scaffolds &scaffolds, Contigs &contigs, RefIntervalsSet &refIntervalsSet);
+
 
 #endif
