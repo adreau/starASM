@@ -146,7 +146,6 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
       exit(EXIT_FAILURE);
   }
 
-
   std::ofstream mapping_file;
   if (! Globals::mapping_file_name.empty()) {
     mapping_file.open(Globals::mapping_file_name);

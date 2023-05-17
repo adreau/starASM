@@ -37,8 +37,6 @@ struct ContigPart: public Interval {
     std::sort(barcodes_end.begin(), barcodes_end.end());
     std::sort(all_barcodes.begin(), all_barcodes.end());
   }
-
-  void isNeighbourSize (ContigPart &ctgPart, std::vector < int > &arcs);
 };
 
 
