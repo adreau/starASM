@@ -1,6 +1,10 @@
 #ifndef DEF_GLOBALS
 #define DEF_GLOBALS
 
+#include <cstddef>
+#include <string>
+
+
 static const int n_link_types = 4;
 
 static const size_t unset_value = -1;

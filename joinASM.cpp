@@ -9,35 +9,14 @@
 #include <cassert>
 
 #include "globals.h"
+#include "parse_parameters.h"
 #include "contig.h"
 #include "graph.h"
 #include "scaffold.h"
 #include "scaffolds_to_fasta.h"
 
 
-static void show_usage(char *name) {
-
-  std::cerr << "Usage: " << name << " <option(s)>\n"
-    << "Options:\n"
-    << "\t-h, --help                  Show this help message\n"
-    << "\t-w, --window          INT   Window size for barcode consideration (default: " << Globals::window << ") \n"
-    << "\t-a, --arcsCondition   INT   Condition used for connecting two contigs; values{1..8} (default: " << Globals::condition << ", lower is more strict) \n"
-    << "\t-r, --nReads          INT   Min number of common barcodes to get a links (default: " << Globals::min_n_reads << ")\n"
-    << "\t-b, --begRatio        FLOAT Ratio of the contig size that is considered as the beginning part (default: " << Globals::beginning_ratio << ", should be less than 0.5)\n"
-    << "\t-v, --minOverlap      INT   Minimum overlap between a molecule and a contig (default: " << Globals::min_overlap << ")\n"
-    << "\t-m, --maxContigDist   INT   Merge contigs if they are separated by not more that N bp (default: " << Globals::max_contig_distance << ")\n"
-    << "\t-i, --molecule        FILE  Input molecule file\n"
-    << "\t-p, --mapping         FILE  Log where the molecule map with respect to the contigs (optional)\n"
-    << "\t-c, --joins           FILE  Contig bed file name (result of splitASM) \n"
-    << "\t-f, --contigs         FILE  Input contigs in FASTA format\n"
-    << "\t-s, --scaffolds       FILE  Output scaffolds file name\n"
-    << "\t-g, --graph           FILE  Output gfa file name\n"
-    << "\t-o, --scaffolds       FILE  Output FASTA file\n"
-    << "\t-l, --fillerSize      INT   Size of the stretch of Ns between the sequences (default: 100)\n"
-    << std::endl;
-}
-
-// Read/store a set of (split) contigs in a bed file.
+// Read a set of (split) contigs in a bed file.
 void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids){
 
   std::ifstream contig_file(Globals::joins_file_name.c_str());
@@ -559,67 +538,8 @@ void print_scaffold (RefIntervalsSet &refIntervalsSet) {
 }
 
 
-// Global values
-unsigned long int Globals::min_overlap         =    300;
-float             Globals::beginning_ratio     =    0.4;
-unsigned long int Globals::window              = 100000;
-unsigned long int Globals::max_contig_distance =  20000;
-int               Globals::condition           =      1;
-int               Globals::min_n_reads         =      3;
-std::string       Globals::joins_file_name     =     "";
-std::string       Globals::graph_file_name     =     "";
-std::string       Globals::molecule_file_name  =     "";
-std::string       Globals::scaffold_file_name  =     "";
-std::string       Globals::mapping_file_name   =     "";
-std::string       Globals::contigs_file_name   =     "";
-std::string       Globals::fasta_file_name     =     "";
-unsigned int      Globals::filler_size         =    100;
-
-
 int main (int argc, char* argv[]) {
-  if (argc < 2) {
-    show_usage(argv[0]);
-    return 1;
-  }
-
-  for (int i = 1; i < argc; ++i) {
-    std::string arg = argv[i];
-    if ((arg == "-h") || (arg == "--help")) {
-      show_usage(argv[0]);
-      return 0;
-    } else if ((arg == "-w") || (arg == "--window")) { //maximal distance between two read pairs of the same molecule
-      Globals::window = std::stoi(argv[++i]);
-    } else if ((arg == "-a") || (arg == "--arcsCondition")){
-      Globals::condition = std::stoi(argv[++i]);
-    } else if ((arg == "-r") || (arg == "--minReads")){
-      Globals::min_n_reads = std::stoi(argv[++i]);
-    } else if ((arg == "-b") || (arg == "--begRatio")){
-      Globals::beginning_ratio = std::stof(argv[++i]);
-    } else if ((arg == "-v") || (arg == "--minOverlap")){
-      Globals::min_overlap = std::stoi(argv[++i]);
-    } else if ((arg == "-l") || (arg == "--fillerSize")){
-      Globals::filler_size = std::atoi(argv[++i]);
-    } else if ((arg == "-m") || (arg == "--maxContigDist")){
-      Globals::max_contig_distance = std::stoi(argv[++i]);
-    } else if ((arg == "-c") || (arg == "--joins")){
-      Globals::joins_file_name = argv[++i];
-    } else if ((arg == "-g") || (arg == "--graph")){
-      Globals::graph_file_name = argv[++i];
-    } else if ((arg == "-s") || (arg == "--scaffolds")){
-      Globals::scaffold_file_name = argv[++i];
-    } else if ((arg == "-p") || (arg == "--mapping")){
-      Globals::mapping_file_name = argv[++i];
-    } else if ((arg == "-o") || (arg == "--scaffolds")){
-      Globals::fasta_file_name = argv[++i];
-    } else if ((arg == "-f") || (arg == "--contigs")){
-      Globals::contigs_file_name = argv[++i];
-    } else if ((arg == "-i") || (arg == "--molecules")){
-      Globals::molecule_file_name = argv[++i];
-    } else {
-      std::cerr << "Error!  Parameter '" << argv[i] << "' is not understood.\nExiting.\n";
-      exit(EXIT_FAILURE);
-    }
-  }
+  parse_parameters(argc, argv);
 
   if (Globals::molecule_file_name.empty()) {
     std::cerr << "Error!  Molecule file missing.\nExiting.\n";
