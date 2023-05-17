@@ -9,14 +9,14 @@
 // Read a set of (split) contigs in a bed file.
 void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids){
 
-  std::ifstream contig_file(Globals::joins_file_name.c_str());
+  std::ifstream contig_file(Globals::input_split_file_name.c_str());
   std::string contig_line, ctg;
   int pos_beg, pos_end;
   unsigned int n_contigs      = 0;
   unsigned int n_contig_parts = 0;
 
   if (! contig_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::joins_file_name << "'" << std::endl;
+      std::cerr << "Error!  Cannot open file '" << Globals::input_split_file_name << "'" << std::endl;
       exit(EXIT_FAILURE);
   }
 
@@ -53,7 +53,7 @@ void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t >
 
 
 // Count the number of common barcodes between to sets
-int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2){
+unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2){
 
   std::vector < unsigned long int > common_barcodes;
 

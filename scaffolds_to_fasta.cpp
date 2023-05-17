@@ -45,9 +45,9 @@ void extract_subsequence (std::map < std::string, std::string > &contigs, RefInt
 
 
 void scaffolds_to_fasta (RefIntervalsSet &refIntervalsSet) {
-  std::ofstream scaff_fasta(Globals::fasta_file_name, std::ofstream::out);	
+  std::ofstream scaff_fasta(Globals::output_file_name, std::ofstream::out);	
   if (! scaff_fasta.is_open()) {
-    std::cerr << "Error!  Cannot open file '" << Globals::fasta_file_name << "'" << std::endl;
+    std::cerr << "Error!  Cannot open file '" << Globals::output_file_name << "'" << std::endl;
     exit(EXIT_FAILURE);
   }
 
