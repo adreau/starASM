@@ -2,7 +2,8 @@
 #define MOL_SPLIT_H
 
 #include "globals.h"
+#include "molecule.h"
 
-void split ();
+void split (Molecules &molecules);
 
 #endif

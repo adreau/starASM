@@ -142,7 +142,9 @@ void print_molecules (Molecules &molecules) {
   output_file.close();
 }
 
-void make_molecules(Barcodes &barcodes, Molecules &molecules) {
+void make_molecules(Molecules &molecules) {
+  Barcodes barcodes;
+  read_sam(barcodes);
   trim_barcodes(barcodes);
   sort_barcodes(barcodes);
   join_to_molecules(barcodes, molecules);

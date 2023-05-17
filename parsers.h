@@ -4,8 +4,8 @@
 #include "molecule.h"
 #include "interval.h"
 
-void parse_contig_file();
 void parse_molecule_file (Molecules &molecules);
-void parse_contig_parts(RefIntervals &refIntervals);
+void parse_split_file (RefIntervalsSet &refIntervalsSet);
+
 
 #endif

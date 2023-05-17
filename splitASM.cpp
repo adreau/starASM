@@ -5,7 +5,7 @@
 #include "outliers_det.h"
 #include "create_molecules.h"
 #include "parsers.h"
-#include "molsplit.h"
+#include "splitASM.h"
 
 void initialize_stats (Molecule_stats &molecule_stats) {
   molecule_stats.resize(Globals::chrs.size());
@@ -15,19 +15,8 @@ void initialize_stats (Molecule_stats &molecule_stats) {
   }
 }
 
-void split () {
-  Molecules      molecules;
+void split (Molecules &molecules) {
   Molecule_stats molecule_stats;
-
-  if (! Globals::output_molecules_file_name.empty()) {
-    parse_contig_file();
-    parse_molecule_file(molecules);
-  }
-  else {
-    Barcodes barcodes;
-    read_sam(barcodes);
-    make_molecules(barcodes, molecules);
-  }
   initialize_stats(molecule_stats);
   compute_stats(molecule_stats, molecules);
   detect_outliers(molecule_stats);

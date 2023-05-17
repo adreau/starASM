@@ -6,7 +6,6 @@
 #include "graph.h"
 
 void create_nodes (Contigs &contigs, Graph &graph) {
-
   for (size_t contigId = 0; contigId < contigs.size(); ++contigId) {
     Contig &contig = contigs[contigId];
     for (size_t contigPartId = 0; contigPartId < contig.contigParts.size(); ++contigPartId) {
@@ -16,7 +15,6 @@ void create_nodes (Contigs &contigs, Graph &graph) {
 }
 
 void create_cis_arcs (Contigs &contigs, Graph &graph) {
-
   std::cerr << "Reconnecting split contigs.\n";
   size_t nodeId = 0;
   unsigned int n_edges = 0;
@@ -46,7 +44,6 @@ void create_cis_arcs (Contigs &contigs, Graph &graph) {
 
 
 void create_trans_arcs (Contigs &contigs, Graph &graph) {
-
   std::cerr << "Connecting distant nodes.\n";
   size_t nodeId1 = 0;
   size_t nodeId2 = 0;
@@ -103,7 +100,6 @@ void create_arcs (Contigs &contigs, Graph &graph) {
 
 
 void get_node_name (Contigs &contigs, Graph &graph, size_t nodeId, std::string &name) {
-
   Node       &node       = graph.nodes[nodeId];
   Contig     &contig     = contigs[node.contigId];
   ContigPart &contigPart = contig.contigParts[node.contigPartId];
@@ -112,17 +108,13 @@ void get_node_name (Contigs &contigs, Graph &graph, size_t nodeId, std::string &
 
 
 void write_graph (Contigs &contigs, Graph &graph) {
-
   std::ofstream graph_file (Globals::graph_file_name, std::ofstream::out);
   std::string ctg1, ctg2;
-
   if (! graph_file.is_open()){
       std::cerr << "Error!  Cannot open file '" << Globals::graph_file_name << "'" << std::endl;
       exit(EXIT_FAILURE);
   }
-
   graph_file << "H\tVN:Z:1.0\n";
-
   for (Contig &contig: contigs) {
     for (ContigPart &contigPart: contig.contigParts) {
       graph_file << "S" << "\t" << contig.name << "_" << contigPart.start << "_" << contigPart.end << "\t*\tLN:i:" << contigPart.getSize() << "\n";

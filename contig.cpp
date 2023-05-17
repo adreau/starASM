@@ -9,7 +9,7 @@
 // Read a set of (split) contigs in a bed file.
 void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids){
 
-  std::ifstream contig_file(Globals::input_split_file_name.c_str());
+  std::ifstream contig_file(Globals::input_split_file_name);
   std::string contig_line, ctg;
   int pos_beg, pos_end;
   unsigned int n_contigs      = 0;
@@ -100,7 +100,7 @@ unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::
 void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids) {
 
   std::cerr << "Reading molecule file...\n";
-  std::ifstream molecule_file (Globals::molecule_file_name.c_str());
+  std::ifstream molecule_file (Globals::molecule_file_name);
   std::string molecule_line, barcode, ctg, prevCtg;
   unsigned long int beg_pos, end_pos, nReads, barcode_id;
   std::unordered_set < std::string > unseen_ctgs;

@@ -56,7 +56,7 @@ void find_scaffolds (Graph &graph, Scaffolds &scaffolds) {
 }
 
 
-void scaffold_to_intervals (Scaffolds &scaffolds, Contigs &contigs, RefIntervalsSet &refIntervalsSet) {
+void scaffolds_to_intervals (Scaffolds &scaffolds, Contigs &contigs, RefIntervalsSet &refIntervalsSet) {
   for (Scaffold &scaffold: scaffolds) {
     RefIntervals refIntervals;
     for (ScaffoldPart &scaffold_part: scaffold) {

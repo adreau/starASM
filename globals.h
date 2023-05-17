@@ -2,10 +2,10 @@
 #define GLOBALS_H
 
 #include <cstddef>
+#include <map>
 #include <unordered_map>
 #include <vector>
 #include <string>
-
 
 static const int n_link_types = 4;
 
@@ -16,10 +16,14 @@ enum Link_types { BB = 0, BE = 1, EB = 2, EE = 3 };
 // What happens if you swap first and second elements?
 static const Link_types reverse_link_type[] = {Link_types::BB, Link_types::EB, Link_types::BE, Link_types::EE};
 
+using Sequences = std::map < std::string, std::string >;
+
+
 struct Globals {
   static std::vector < std::string >                     chrs;
   static std::unordered_map < std::string, std::size_t > chrids;
   static std::vector < std::size_t >                     chr_sizes;
+  static Sequences                                       sequences;
 
   static unsigned int  max_read_distance;
   static unsigned int  min_mapq;
@@ -49,7 +53,6 @@ struct Globals {
   static std::string   mapping_file_name;
   static std::string   output_file_name;
   static unsigned int  filler_size;
-
 };
 
 

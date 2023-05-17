@@ -9,25 +9,6 @@
 #include "parsers.h"
 
 
-void parse_contig_file () {
-  std::ifstream contig_file (Globals::contigs_file_name);
-  std::string line, contig;
-  long int size;
-  if (! contig_file.is_open()) {
-    std::cerr << "Cannot open contig file.\n";
-    exit(EXIT_FAILURE);
-  }
-  while(getline(contig_file, line)) {
-    std::stringstream ss (line);
-    ss >> contig >> size;
-    Globals::chrids[contig] = Globals::chrs.size();
-    Globals::chrs.push_back(contig);
-    Globals::chr_sizes.push_back(size);
-  }
-  Globals::chrs.shrink_to_fit();
-  Globals::chr_sizes.shrink_to_fit();
-}
-
 void parse_molecule_file (Molecules &molecules) {
   std::ifstream molecule_file (Globals::input_molecules_file_name);
   std::string line, contig, barcode;
@@ -45,7 +26,7 @@ void parse_molecule_file (Molecules &molecules) {
   }
 }
 
-void parse_contig_parts (RefIntervalsSet &refIntervalsSet) {
+void parse_split_file (RefIntervalsSet &refIntervalsSet) {
   std::ifstream joins_file (Globals::input_split_file_name);
   if (! joins_file.is_open()) {
     std::cerr << "Error!  Cannot open file '" << Globals::input_split_file_name << "'" << std::endl;

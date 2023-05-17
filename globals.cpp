@@ -3,6 +3,8 @@
 std::vector < std::string >                     Globals::chrs;
 std::unordered_map < std::string, std::size_t > Globals::chrids;
 std::vector < size_t >                          Globals::chr_sizes;
+Sequences                                       Globals::sequences;
+
 
 unsigned int  Globals::max_read_distance      {              60000 };
 unsigned int  Globals::min_mapq               {                  0 };
@@ -17,7 +19,7 @@ std::string   Globals::counts_file_name;
 std::string   Globals::scores_file_name;
 std::string   Globals::contigs_file_name;
 std::string   Globals::input_molecules_file_name;
-unsigned long Globals::n_sample               {                  0 };
+unsigned long Globals::n_sample               {              10000 };
 int           Globals::min_ctg_size           {              20000 };
 
 
