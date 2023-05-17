@@ -17,7 +17,7 @@
 #include "joinASM.h"
 
 void join (Molecules &molecules, Contigs &contigs) {
-  add_molecules_to_contigs_extremites(contigs);
+  add_molecules_to_contigs_extremites(molecules, contigs);
   Graph graph;
   create_nodes(contigs, graph);
   create_arcs(contigs, graph);
