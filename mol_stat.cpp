@@ -56,14 +56,14 @@ void compute_stats (Molecule_stats &molecule_stats, Molecules &molecules) {
 
       // Switch back to 1-based positions
       if (! Globals::counts_file_name.empty()) {
-        counts_file << chr                              << tab <<
-          windowid * Globals::window + 1               << tab <<
-          (windowid + 1) * Globals::window             << tab <<
-          molecule_stats[chrid][windowid].coverage     << tab <<
-          molecule_stats[chrid][windowid].length       << tab <<
-          molecule_stats[chrid][windowid].read_density << tab <<
-          molecule_stats[chrid][windowid].start        << tab <<
-          molecule_stats[chrid][windowid].end          << "\n";
+        counts_file << chr                             << TAB <<
+          windowid * Globals::window + 1               << TAB <<
+          (windowid + 1) * Globals::window             << TAB <<
+          molecule_stats[chrid][windowid].coverage     << TAB <<
+          molecule_stats[chrid][windowid].length       << TAB <<
+          molecule_stats[chrid][windowid].read_density << TAB <<
+          molecule_stats[chrid][windowid].start        << TAB <<
+          molecule_stats[chrid][windowid].end          << '\n';
       }
     }
   }

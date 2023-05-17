@@ -32,7 +32,7 @@ void merge_close_contigs (RefIntervalsSet &refIntervalsSet) {
 void print_scaffold (RefIntervalsSet &refIntervalsSet) {
   std::ofstream scaffold_file (Globals::scaffold_file_name, std::ofstream::out);
   if (! scaffold_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::scaffold_file_name << "'" << std::endl;
+      std::cerr << "Error!  Cannot open file '" << Globals::scaffold_file_name << "'\n";
       exit(EXIT_FAILURE);
   }
   for (auto &refIntervals: refIntervalsSet) {

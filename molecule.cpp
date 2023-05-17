@@ -16,10 +16,10 @@ bool operator< (const Molecule& lhs, const Molecule& rhs) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Molecule& molecule) {
-  os << Globals::chrs[molecule.chrid] << tab <<
-    molecule.start                    << tab <<
-    molecule.end                      << tab <<
-    molecule.barcode                  << tab <<
+  os << Globals::chrs[molecule.chrid] << TAB <<
+    molecule.start                    << TAB <<
+    molecule.end                      << TAB <<
+    molecule.barcode                  << TAB <<
     molecule.n_reads                  << "\n";
   return os;
 }

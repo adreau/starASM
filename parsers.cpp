@@ -1,5 +1,4 @@
 #include <cassert>
-#include <vector>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -26,25 +25,22 @@ void parse_molecule_file (Molecules &molecules) {
   }
 }
 
-void parse_split_file (RefIntervalsSet &refIntervalsSet) {
-  std::ifstream joins_file (Globals::input_split_file_name);
-  if (! joins_file.is_open()) {
-    std::cerr << "Error!  Cannot open file '" << Globals::input_split_file_name << "'" << std::endl;
-    exit(EXIT_FAILURE);
+void parse_split_file (Contigs &contigs) {
+  std::ifstream contig_file(Globals::input_split_file_name);
+  std::string contig_line, ctg;
+  int pos_beg, pos_end;
+  unsigned int n_contig_parts;
+  if (! contig_file.is_open()){
+      std::cerr << "Error!  Cannot open file '" << Globals::input_split_file_name << "'\n";
+      exit(EXIT_FAILURE);
   }
-  std::string line, part, ref;
-  unsigned long int start, end;
-  char strand;
-  while (getline(joins_file, line)) {
-    std::istringstream split_line(line);
-    RefIntervals refIntervals;
-    while (getline(split_line, part, ';')) {
-      if (! part.empty()) {
-        std::stringstream split_part(part);
-        split_part >> strand >> ref >> start >> end;
-        refIntervals.emplace_back(ref, strand, start, end);
-      }
-    }
-    refIntervalsSet.push_back(refIntervals);
+  contigs.resize(Globals::chrs.size());
+  for (n_contig_parts = 0; getline(contig_file, contig_line); ++n_contig_parts) {
+    std::stringstream splitstream (contig_line);
+    splitstream >> ctg >> pos_beg >> pos_end;
+    // BED format is 0-based on the start, and 1-based on the end
+    ++pos_beg;
+    contigs[Globals::chrids[ctg]].add_part(pos_beg, pos_end);
   }
+  std::cerr << n_contig_parts << " contig parts, seen.\n";
 }

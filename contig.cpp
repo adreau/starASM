@@ -6,52 +6,6 @@
 #include "contig.h"
 
 
-// Read a set of (split) contigs in a bed file.
-void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids){
-
-  std::ifstream contig_file(Globals::input_split_file_name);
-  std::string contig_line, ctg;
-  int pos_beg, pos_end;
-  unsigned int n_contigs      = 0;
-  unsigned int n_contig_parts = 0;
-
-  if (! contig_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::input_split_file_name << "'" << std::endl;
-      exit(EXIT_FAILURE);
-  }
-
-  while (getline(contig_file, contig_line)){
-
-    std::stringstream splitstream (contig_line);
-    splitstream >> ctg >> pos_beg >> pos_end;
-
-    // BED format is 0-based on the start, and 1-based on the end
-    ++pos_beg;
-    // If the contig is split, the second (third, etc.) part should be appened to the contig
-    if ((! contigs.empty()) && (ctg == contigs.back().name)) {
-      contigs.back().addPart(pos_beg, pos_end);
-      ++n_contig_parts;
-    }
-    else {
-      auto pos = contig_ids.find(ctg);
-      // We have a new contig
-      if (pos == contig_ids.end()) {
-        contig_ids[ctg] = contigs.size();
-        contigs.emplace_back(ctg, pos_beg, pos_end);
-        ++n_contigs;
-        ++n_contig_parts;
-      }
-      // If the file is not ordered (but why?) the contig may be already stored
-      else {
-        contigs[pos->second].addPart(pos_beg, pos_end);
-        ++n_contig_parts;
-      }
-    }
-  }
-  std::cerr << n_contigs << " contigs, and " << n_contig_parts << " contig parts, seen.\n";
-}
-
-
 // Count the number of common barcodes between to sets
 unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2){
 
@@ -97,13 +51,12 @@ unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::
 }
 
 // Find the number of common barcodes between contig ends
-void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids) {
+void add_molecules_to_contigs_extremites (Contigs &contigs) {
 
   std::cerr << "Reading molecule file...\n";
   std::ifstream molecule_file (Globals::molecule_file_name);
   std::string molecule_line, barcode, ctg, prevCtg;
   unsigned long int beg_pos, end_pos, nReads, barcode_id;
-  std::unordered_set < std::string > unseen_ctgs;
   std::unordered_map < std::string, unsigned long int > barcode_to_id;
   unsigned int n_barcodes_begin  = 0;
   unsigned int n_barcodes_end    = 0;
@@ -112,7 +65,7 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
   size_t ctg_id, prevCtg_id = 0;
 
   if (! molecule_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::molecule_file_name << "'" << std::endl;
+      std::cerr << "Error!  Cannot open file '" << Globals::molecule_file_name << "'.\n";
       exit(EXIT_FAILURE);
   }
 
@@ -120,10 +73,8 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
   if (! Globals::mapping_file_name.empty()) {
     mapping_file.open(Globals::mapping_file_name);
   }
-
   long unsigned int n_lines;
   for (n_lines = 0; getline(molecule_file, molecule_line); ++n_lines){
-
     std::stringstream  splitstream(molecule_line);
     splitstream >> ctg >> beg_pos >> end_pos >> barcode >> nReads;
     auto pos = barcode_to_id.find(barcode);
@@ -134,22 +85,19 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
     else {
       barcode_id = pos->second;
     }
-
     if (ctg == prevCtg) {
       ctg_id = prevCtg_id;
     }
     else {
-      auto pos = contig_ids.find(ctg);
-      if (pos == contig_ids.end()) {
-        unseen_ctgs.insert(ctg);
-        ++n_barcodes_unused;
-        continue;
+      auto pos = Globals::chrids.find(ctg);
+      if (pos == Globals::chrids.end()) {
+        std::cerr << "Error!  Contig '" << ctg << "' does not match any sequence name in the FASTA file.\n";
+        exit(EXIT_FAILURE);
       }
       ctg_id     = pos->second;
       prevCtg    = ctg;
       prevCtg_id = ctg_id;
     }
-
     Interval molecule_interval (beg_pos, end_pos);
     for (ContigPart &contigPart: contigs[ctg_id].contigParts) {
       if (contigPart.get_overlap(molecule_interval) >= Globals::min_overlap) {
@@ -193,16 +141,6 @@ void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map <
     (n_barcodes_begin + n_barcodes_end + n_barcodes_other) << " anchored in general, and " <<
     n_barcodes_unused << " unused.\n";
   std::cerr << barcode_to_id.size() << " different barcodes seen.\n";
-
-  if (! unseen_ctgs.empty()) {
-    std::vector < std::string > sorted_unseen_ctgs (unseen_ctgs.begin(), unseen_ctgs.end()); 
-    sort(sorted_unseen_ctgs.begin(), sorted_unseen_ctgs.end());
-    std::cerr << "Warning, " << sorted_unseen_ctgs.size() << " contigs are seen in the molecules, but not in the contigs:\n";
-    for (auto &unseen_ctg: sorted_unseen_ctgs) {
-      std::cerr << "\t" << unseen_ctg << "\n";
-    }
-  }
-
   std::cerr << "Sorting barcodes:\n";
   for (size_t i = 0; i < contigs.size(); ++i) {
     Contig &contig = contigs[i];

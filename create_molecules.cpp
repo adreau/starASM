@@ -149,5 +149,7 @@ void make_molecules(Molecules &molecules) {
   sort_barcodes(barcodes);
   join_to_molecules(barcodes, molecules);
   sort_molecules(molecules);
-  print_molecules(molecules);
+  if (! Globals::output_molecules_file_name.empty()) {
+    print_molecules(molecules);
+  }
 }

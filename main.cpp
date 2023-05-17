@@ -13,28 +13,32 @@
 int main (int argc, char* argv[]) {
   parse_parameters(argc, argv);
 
-  Molecules molecules;
   Sequences sequences;
-
   read_fasta();
 
   // start with SAM file
   if (Globals::output_molecules_file_name.empty()) {
+    Molecules molecules;
+    Contigs contigs;
     make_molecules(molecules);
-    split(molecules);
-    join(molecules);
+    split(molecules, contigs);
+    join(molecules, contigs);
   }
   // start with molecule file
   else if (Globals::output_split_file_name.empty()) {
+    Molecules molecules;
+    Contigs contigs;
     parse_molecule_file(molecules);
-    split(molecules);
-    join(molecules);
+    split(molecules, contigs);
+    join(molecules, contigs);
   }
   // start with split file
   else {
-    RefIntervalsSet refIntervalsSet;
-    parse_split_file(refIntervalsSet);
-    join(molecules);
+    Molecules molecules;
+    Contigs contigs;
+    parse_molecule_file(molecules);
+    parse_split_file(contigs);
+    join(molecules, contigs);
   }
   return EXIT_SUCCESS;
 }

@@ -103,7 +103,7 @@ void get_node_name (Contigs &contigs, Graph &graph, size_t nodeId, std::string &
   Node       &node       = graph.nodes[nodeId];
   Contig     &contig     = contigs[node.contigId];
   ContigPart &contigPart = contig.contigParts[node.contigPartId];
-  name = contig.name + "_" + std::to_string(contigPart.start) + "_" + std::to_string(contigPart.end);
+  name = Globals::chrs[node.contigId] + "_" + std::to_string(contigPart.start) + "_" + std::to_string(contigPart.end);
 }
 
 
@@ -111,13 +111,14 @@ void write_graph (Contigs &contigs, Graph &graph) {
   std::ofstream graph_file (Globals::graph_file_name, std::ofstream::out);
   std::string ctg1, ctg2;
   if (! graph_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::graph_file_name << "'" << std::endl;
+      std::cerr << "Error!  Cannot open file '" << Globals::graph_file_name << "'\n.";
       exit(EXIT_FAILURE);
   }
   graph_file << "H\tVN:Z:1.0\n";
-  for (Contig &contig: contigs) {
+  for (unsigned int i = 0; i < contigs.size(); ++i) {
+    Contig &contig = contigs[i];
     for (ContigPart &contigPart: contig.contigParts) {
-      graph_file << "S" << "\t" << contig.name << "_" << contigPart.start << "_" << contigPart.end << "\t*\tLN:i:" << contigPart.getSize() << "\n";
+      graph_file << "S" << "\t" << Globals::chrs[i] << "_" << contigPart.start << "_" << contigPart.end << "\t*\tLN:i:" << contigPart.getSize() << "\n";
     }
   }
   for (size_t nodeId1 = 0; nodeId1 < graph.nodes.size(); ++nodeId1) {

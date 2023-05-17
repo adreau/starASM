@@ -4,6 +4,6 @@
 #include "globals.h"
 #include "molecule.h"
 
-void split (Molecules &molecules);
+void split (Molecules &molecules, Contigs &contigs);
 
 #endif

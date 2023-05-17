@@ -26,5 +26,4 @@ using Scaffolds = std::vector < Scaffold >;
 void find_scaffolds (Graph &graph, Scaffolds &scaffolds);
 void scaffolds_to_intervals (Scaffolds &scaffolds, Contigs &contigs, RefIntervalsSet &refIntervalsSet);
 
-
 #endif

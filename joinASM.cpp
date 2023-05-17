@@ -16,11 +16,8 @@
 #include "scaffolds_to_fasta.h"
 #include "joinASM.h"
 
-void join (Molecules &molecules) {
-  Contigs contigs;
-  std::unordered_map < std::string, size_t > contig_ids;
-  create_contigs(contigs, contig_ids);
-  add_molecules_to_contigs_extremites(contigs, contig_ids);
+void join (Molecules &molecules, Contigs &contigs) {
+  add_molecules_to_contigs_extremites(contigs);
   Graph graph;
   create_nodes(contigs, graph);
   create_arcs(contigs, graph);

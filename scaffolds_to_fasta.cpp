@@ -49,7 +49,7 @@ void scaffolds_to_fasta (RefIntervalsSet &refIntervalsSet) {
   unsigned int n_scaffolds;
   std::ofstream output_file (Globals::output_file_name, std::ofstream::out);
   if (! output_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::output_file_name << "'" << std::endl;
+      std::cerr << "Error!  Cannot open file '" << Globals::output_file_name << "'\n";
       exit(EXIT_FAILURE);
   }
   for (n_scaffolds = 0; n_scaffolds < refIntervalsSet.size(); ++n_scaffolds) {

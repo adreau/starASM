@@ -15,9 +15,9 @@ void initialize_stats (Molecule_stats &molecule_stats) {
   }
 }
 
-void split (Molecules &molecules) {
+void split (Molecules &molecules, Contigs &contigs) {
   Molecule_stats molecule_stats;
   initialize_stats(molecule_stats);
   compute_stats(molecule_stats, molecules);
-  detect_outliers(molecule_stats);
+  detect_outliers(molecule_stats, contigs);
 }

@@ -2,10 +2,9 @@
 #define PARSERS_H
 
 #include "molecule.h"
-#include "interval.h"
+#include "contig.h"
 
 void parse_molecule_file (Molecules &molecules);
-void parse_split_file (RefIntervalsSet &refIntervalsSet);
-
+void parse_split_file (Contigs &contigs);
 
 #endif

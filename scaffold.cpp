@@ -14,7 +14,6 @@ size_t find_first_scaffold_end (Graph &graph, size_t nodeIdStart, std::vector < 
 
 // Find the list of scaffolds in the graph
 void find_scaffolds (Graph &graph, Scaffolds &scaffolds) {
-
   size_t n_nodes = graph.nodes.size();
   std::vector < bool > seen_nodes (n_nodes, false);
   for (size_t nodeIdStart = find_first_scaffold_end(graph, 0, seen_nodes); nodeIdStart < n_nodes; nodeIdStart = find_first_scaffold_end(graph, ++nodeIdStart, seen_nodes)) {
@@ -60,13 +59,11 @@ void scaffolds_to_intervals (Scaffolds &scaffolds, Contigs &contigs, RefInterval
   for (Scaffold &scaffold: scaffolds) {
     RefIntervals refIntervals;
     for (ScaffoldPart &scaffold_part: scaffold) {
-      Contig     &contig      = get_contig(contigs, scaffold_part.nodeId);
       ContigPart &contig_part = get_contig_part(contigs, scaffold_part.nodeId);
       if (contig_part.is_set()) {
-        refIntervals.emplace_back(contig.name, scaffold_part.is_forward, contig_part.start, contig_part.end);
+        refIntervals.emplace_back(Globals::chrs[scaffold_part.nodeId.contigId], scaffold_part.is_forward, contig_part.start, contig_part.end);
       }
     }
     refIntervalsSet.push_back(refIntervals);
   }
 }
-

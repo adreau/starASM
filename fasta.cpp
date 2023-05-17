@@ -34,7 +34,7 @@ void complement (std::string &DNAseq) {
 void read_fasta () {
   std::ifstream ctg_fasta(Globals::contigs_file_name);
   if (! ctg_fasta.is_open()) {
-    std::cerr << "Error!  Cannot open file '" << Globals::contigs_file_name << "'" << std::endl;
+    std::cerr << "Error!  Cannot open file '" << Globals::contigs_file_name << "'\n.";
     exit(EXIT_FAILURE);
   }
   std::string ctg_line, ctg_name, ctg_seq;

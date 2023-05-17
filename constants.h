@@ -3,7 +3,7 @@
 
 #include <string>
 
-const char tab { '\t' };
+const char        TAB           {    '\t' };
 
 const std::string SEQUENCE_LINE {   "@SQ" };
 const std::string SEQUENCE_NAME {   "SN:" };

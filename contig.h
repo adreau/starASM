@@ -45,15 +45,10 @@ struct ContigPart: public Interval {
 
 struct Contig {
 
-  std::string name;
   std::vector < ContigPart > contigParts;
 
-  void addPart (unsigned long int pos_beg, unsigned long int pos_end) {
+  void add_part (unsigned long int pos_beg, unsigned long int pos_end) {
     contigParts.emplace_back(pos_beg, pos_end);
-  }
-
-  Contig (std::string &n, unsigned long int pos_beg, unsigned long int pos_end): name(n) {
-    addPart(pos_beg, pos_end);
   }
 
   void sort_barcodes () {
@@ -66,9 +61,7 @@ struct Contig {
 
 using Contigs = std::vector < Contig >;
 
-
-void create_contigs(Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids);
-void add_molecules_to_contigs_extremites (Contigs &contigs, std::unordered_map < std::string, size_t > &contig_ids);
+void add_molecules_to_contigs_extremites (Contigs &contigs);
 unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2);
 Contig &get_contig (Contigs &contigs, NodeId &nodeId);
 ContigPart &get_contig_part (Contigs &contigs, NodeId &nodeId);

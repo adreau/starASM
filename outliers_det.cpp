@@ -8,6 +8,7 @@
 #include <iomanip>
 
 #include "constants.h"
+#include "contig.h"
 #include "outliers_det.h"
 
 
@@ -122,7 +123,7 @@ void compute_score(std::vector<double> &stat, unsigned long n, long d, unsigned 
 }
 
 
-void detect_outliers(Molecule_stats &molecule_stats) {
+void detect_outliers(Molecule_stats &molecule_stats, Contigs &contigs) {
 
   std::ofstream output_file;
   std::ofstream scores_file;
@@ -152,12 +153,13 @@ void detect_outliers(Molecule_stats &molecule_stats) {
 
   compute_score(all_values, n_elements, d, Globals::n_sample, seed, score_all_values);
 
+  contigs.resize(Globals::chrs.size());
   cpt = 0;
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     unsigned int npos           = molecule_stats[chrid].size();
     bool         incut          = false;
     unsigned int bin_frag_start = 0;
-    std::string &ctg    = Globals::chrs[chrid];
+    std::string &ctg            = Globals::chrs[chrid];
 
     for (unsigned int pos = 0; pos < npos; ++pos, ++cpt) {
       if (score_all_values[cpt] > Globals::threshold) {
@@ -166,9 +168,14 @@ void detect_outliers(Molecule_stats &molecule_stats) {
           int size = (pos - bin_frag_start) * Globals::window;
           if (size >= Globals::min_ctg_size) {
             // Do not print if we start with a cut
-            // Output in BED format
             if (pos > 0) {
-              if (! Globals::output_split_file_name.empty()) output_file << ctg << '\t' << bin_frag_start * Globals::window << '\t' << pos * Globals::window << '\n';
+              unsigned int start = bin_frag_start * Globals::window;
+              unsigned int end   = pos * Globals::window;
+              contigs[chrid].add_part(start, end);
+              // Output in BED format
+              if (! Globals::output_split_file_name.empty()) {
+                output_file << ctg << TAB << start << TAB << end << '\n';
+              }
             }
           }
         }
@@ -179,15 +186,20 @@ void detect_outliers(Molecule_stats &molecule_stats) {
         bin_frag_start = pos;
       }
       if (! Globals::scores_file_name.empty()) scores_file << std::fixed << std::setprecision(6) <<
-          ctg                         << tab <<
-          pos * Globals::window + 1   << tab <<
-          (pos + 1) * Globals::window << tab <<
+          ctg                         << TAB <<
+          pos * Globals::window + 1   << TAB <<
+          (pos + 1) * Globals::window << TAB <<
           score_all_values[cpt] << '\n';
     }
     std::cerr << "Analyzing contig #" << chrid << "/" << nchrs << ".\r" << std::flush;
     if (! incut) {
+      unsigned int start = bin_frag_start * Globals::window;
+      unsigned int end   = Globals::chr_sizes[chrid];
+      contigs[chrid].add_part(start, end);
       // Output in BED format
-      if (! Globals::output_split_file_name.empty()) output_file << ctg << tab << bin_frag_start * Globals::window << tab << Globals::chr_sizes[chrid] << '\n';
+      if (! Globals::output_split_file_name.empty()) {
+                output_file << ctg << TAB << start << TAB << end << '\n';
+      }
     }
   }
   std::cerr << "Analyzing contig #" << nchrs << "/" << nchrs << ".\n";
