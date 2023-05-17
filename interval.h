@@ -1,5 +1,5 @@
-#ifndef DEF_INTERVAL
-#define DEF_INTERVAL
+#ifndef INTERVAL_H
+#define INTERVAL_H
 
 #include <vector>
 #include <string>

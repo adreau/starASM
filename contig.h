@@ -1,5 +1,5 @@
-#ifndef DEF_CONTIG
-#define DEF_CONTIG
+#ifndef CONTIG_H
+#define CONTIG_H
 
 #include <string>
 #include <vector>

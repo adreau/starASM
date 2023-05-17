@@ -1,5 +1,5 @@
-#ifndef DEF_GRAPH
-#define DEF_GRAPH
+#ifndef GRAPH_H
+#define GRAPH_H
 
 #include <vector>
 

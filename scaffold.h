@@ -1,5 +1,5 @@
-#ifndef DEF_SCAFFOLD
-#define DEF_SCAFFOLD
+#ifndef SCAFFOLD_H
+#define SCAFFOLD_H
 
 #include "interval.h"
 #include "graph.h"
