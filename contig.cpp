@@ -76,9 +76,8 @@ void add_molecules_to_contigs_extremites (Molecules &molecules, Contigs &contigs
     else {
       barcode_id = pos->second;
     }
-    Interval molecule_interval (molecule.start, molecule.end);
     for (ContigPart &contigPart: contigs[molecule.chrid].contigParts) {
-      if (contigPart.get_overlap(molecule_interval) >= Globals::min_overlap) {
+      if (contigPart.get_overlap(molecule) >= Globals::min_overlap) {
         // This is the condition to set a barcode to the beginning of a contig part
         if ((molecule.start >= contigPart.start) &&
             (molecule.start <= contigPart.start + std::min(Globals::window, contigPart.getSize() / 2)) &&

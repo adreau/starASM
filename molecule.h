@@ -4,13 +4,14 @@
 #include <iostream>
 #include <string>
 
+#include "interval.h"
 
-struct Molecule {
+
+struct Molecule: public Interval {
   unsigned int chrid;
-  unsigned long start, end;
   std::string barcode;
   unsigned int n_reads;
-  Molecule (unsigned int c, unsigned long s, unsigned long e, const std::string &b, unsigned int n): chrid(c), start(s), end(e), barcode(b), n_reads(n) {}
+  Molecule (unsigned int c, unsigned long s, unsigned long e, const std::string &b, unsigned int n): Interval(s, e), chrid(c), barcode(b), n_reads(n) {}
   friend bool operator< (const Molecule& lhs, const Molecule& rhs);
   friend std::ostream& operator<<(std::ostream& os, const Molecule& molecule);
 };

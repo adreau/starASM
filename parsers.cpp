@@ -31,7 +31,7 @@ void parse_split_file (Contigs &contigs) {
   int pos_beg, pos_end;
   unsigned int n_contig_parts;
   if (! contig_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::input_split_file_name << "'\n";
+      std::cerr << "Error!  Cannot open file '" << Globals::input_split_file_name << "'.\n";
       exit(EXIT_FAILURE);
   }
   contigs.resize(Globals::chrs.size());

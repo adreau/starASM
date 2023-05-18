@@ -16,27 +16,21 @@ void create_nodes (Contigs &contigs, Graph &graph) {
 
 void create_cis_arcs (Contigs &contigs, Graph &graph) {
   std::cerr << "Reconnecting split contigs.\n";
-  size_t nodeId = 0;
   unsigned int n_edges = 0;
   unsigned int n_possible_edges = 0;
-  for (size_t contigId = 0; contigId < contigs.size(); ++contigId) {
-    Contig &contig = contigs[contigId];
-    for (size_t contigPartId = 0; contigPartId < contig.contigParts.size() - 1; ++contigPartId) {
-      ContigPart &contigPart1 = contig.contigParts[contigPartId];
-      ContigPart &contigPart2 = contig.contigParts[contigPartId + 1];
-      assert(graph.nodes[nodeId].contigId       == contigId);
-      assert(graph.nodes[nodeId].contigPartId   == contigPartId);
-      assert(graph.nodes[nodeId+1].contigId     == contigId);
-      assert(graph.nodes[nodeId+1].contigPartId == contigPartId + 1);
-      if (intersectMoleculesSize(contigPart1.all_barcodes, contigPart2.all_barcodes) >= Globals::min_n_reads) {
-        graph.add_edge(nodeId, nodeId + 1, Link_types::EB);
+  for (size_t nodeId = 1; nodeId < graph.nodes.size(); ++nodeId) {
+    Node &prevNode = graph.nodes[nodeId - 1];
+    Node &nextNode = graph.nodes[nodeId];
+    if (prevNode.contigId == nextNode.contigId) {
+      ++n_possible_edges;
+      ContigPart prevContigPart = get_contig_part(contigs, prevNode);
+      ContigPart nextContigPart = get_contig_part(contigs, nextNode);
+      if (intersectMoleculesSize(prevContigPart.all_barcodes, nextContigPart.all_barcodes) >= Globals::min_n_reads) {
+        graph.add_edge(nodeId - 1, nodeId, Link_types::EB);
         ++n_edges;
       }
       if (nodeId % 100 == 0) std::cerr << "\tNode #" << nodeId << " / " << graph.nodes.size() << ".\r" << std::flush;
-      ++nodeId;
-      ++n_possible_edges;
     }
-    ++nodeId;
   }
   std::cerr << "\tNode #" << graph.nodes.size() << " / " << graph.nodes.size() << ".\n";
   std::cerr << "\t" << n_edges << " edges added (out of " << n_possible_edges << " possible edges).\n";
@@ -44,53 +38,38 @@ void create_cis_arcs (Contigs &contigs, Graph &graph) {
 
 
 void create_trans_arcs (Contigs &contigs, Graph &graph) {
-  std::cerr << "Connecting distant nodes.\n";
-  size_t nodeId1 = 0;
-  size_t nodeId2 = 0;
-  unsigned int n_edges = 0;
-  for (size_t contigId1 = 0; contigId1 < contigs.size(); ++contigId1) {
-    Contig &contig1 = contigs[contigId1];
-    for (size_t contigPartId1 = 0; contigPartId1 < contig1.contigParts.size(); ++contigPartId1) {
-      ContigPart &contigPart1 = contig1.contigParts[contigPartId1];
-      assert(graph.nodes[nodeId1].contigId     == contigId1);
-      assert(graph.nodes[nodeId1].contigPartId == contigPartId1);
-      size_t contigPartId2 = contigPartId1;
-      nodeId2 = nodeId1;
-      for (size_t contigId2 = contigId1; contigId2 < contigs.size(); ++contigId2) {
-        Contig &contig2 = contigs[contigId2];
-        for (; contigPartId2 < contig2.contigParts.size(); ++contigPartId2) {
-          ContigPart &contigPart2 = contig2.contigParts[contigPartId2];
-          assert(graph.nodes[nodeId2].contigId     == contigId2);
-          assert(graph.nodes[nodeId2].contigPartId == contigPartId2);
-          // Use a strange trick to keep nodeId1 and nodeId2 synchronized
-          if ((contigId1 != contigId2) || (contigPartId1 != contigPartId2)) {
-            if (intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_beg) >= Globals::min_n_reads) {
-              graph.add_edge(nodeId1, nodeId2, Link_types::BB);
-              ++n_edges;
-            }
-            if (intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_end) >= Globals::min_n_reads) {
-              graph.add_edge(nodeId1, nodeId2, Link_types::BE);
-              ++n_edges;
-            }
-            if (intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_beg) >= Globals::min_n_reads) {
-              graph.add_edge(nodeId1, nodeId2, Link_types::EB);
-              ++n_edges;
-            }
-            if (intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_end) >= Globals::min_n_reads) {
-              graph.add_edge(nodeId1, nodeId2, Link_types::EE);
-              ++n_edges;
-            }
-          }
-          ++nodeId2;
-        }
-        contigPartId2 = 0;
+  std::cerr << "Connecting distant contigs.\n";
+  unsigned int edge_id       = 0;
+  unsigned int n_edges       = 0;
+  unsigned int total_n_edges = graph.nodes.size() * (graph.nodes.size() - 1) / 2;
+  for (size_t nodeId1 = 0; nodeId1 < graph.nodes.size(); ++nodeId1) {
+    Node       &node1       = graph.nodes[nodeId1];
+    ContigPart &contigPart1 = get_contig_part(contigs, node1);
+    for (size_t nodeId2 = nodeId1 + 1; nodeId2 < graph.nodes.size(); ++nodeId2) {
+      Node       &node2       = graph.nodes[nodeId2];
+      ContigPart &contigPart2 = get_contig_part(contigs, node2);
+      if (intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_beg) >= Globals::min_n_reads) {
+        graph.add_edge(nodeId1, nodeId2, Link_types::BB);
+        ++n_edges;
       }
-      if (nodeId1 % 100 == 0) std::cerr << "\tNode #" << nodeId1 << " / " << graph.nodes.size() << ".\r" << std::flush;
-      ++nodeId1;
+      if (intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_end) >= Globals::min_n_reads) {
+        graph.add_edge(nodeId1, nodeId2, Link_types::BE);
+        ++n_edges;
+      }
+      if (intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_beg) >= Globals::min_n_reads) {
+        graph.add_edge(nodeId1, nodeId2, Link_types::EB);
+        ++n_edges;
+      }
+      if (intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_end) >= Globals::min_n_reads) {
+        graph.add_edge(nodeId1, nodeId2, Link_types::EE);
+        ++n_edges;
+      }
+      if (edge_id % 1000 == 0) std::cerr << "\tEdge #" << edge_id << " / " << total_n_edges << ".\r" << std::flush;
+      ++edge_id;
     }
   }
-  std::cerr << "\tNode #" << graph.nodes.size() << " / " << graph.nodes.size() << ".\n";
-  std::cerr << "\t" << n_edges << " edges added (out of " << (2 * graph.nodes.size() * (graph.nodes.size() - 1)) << " possible edges).\n";
+  std::cerr << "\tEdge #" << total_n_edges << " / " << total_n_edges << ".\n";
+  std::cerr << "\t" << n_edges << " edges added (out of " << total_n_edges << " possible edges).\n";
 }
 
 void create_arcs (Contigs &contigs, Graph &graph) {
@@ -111,7 +90,7 @@ void write_graph (Contigs &contigs, Graph &graph) {
   std::ofstream graph_file (Globals::graph_file_name, std::ofstream::out);
   std::string ctg1, ctg2;
   if (! graph_file.is_open()){
-      std::cerr << "Error!  Cannot open file '" << Globals::graph_file_name << "'\n.";
+      std::cerr << "Error!  Cannot open file '" << Globals::graph_file_name << "'.\n";
       exit(EXIT_FAILURE);
   }
   graph_file << "H\tVN:Z:1.0\n";

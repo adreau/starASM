@@ -25,7 +25,7 @@ void complement (std::string &DNAseq) {
         DNAseq[i] = 'A';
         break;
       default:
-        std::cerr << "Error! Unknown nucleotide '" << DNAseq[i] << "'.";
+        std::cerr << "Error! Unknown nucleotide '" << DNAseq[i] << "'.\n";
         exit(EXIT_FAILURE);
     }
   }
@@ -38,7 +38,7 @@ void read_fasta () {
   }
   std::ifstream ctg_fasta(Globals::contigs_file_name);
   if (! ctg_fasta.is_open()) {
-    std::cerr << "Error!  Cannot open file '" << Globals::contigs_file_name << "'\n.";
+    std::cerr << "Error!  Cannot open file '" << Globals::contigs_file_name << "'.\n";
     exit(EXIT_FAILURE);
   }
   std::string ctg_line, ctg_name, ctg_seq;
