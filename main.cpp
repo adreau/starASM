@@ -17,7 +17,7 @@ int main (int argc, char* argv[]) {
   read_fasta();
 
   // start with SAM file
-  if (Globals::output_molecules_file_name.empty()) {
+  if (Globals::input_molecules_file_name.empty()) {
     Molecules molecules;
     Contigs contigs;
     make_molecules(molecules);
@@ -25,7 +25,7 @@ int main (int argc, char* argv[]) {
     join(molecules, contigs);
   }
   // start with molecule file
-  else if (Globals::output_split_file_name.empty()) {
+  else if (Globals::input_split_file_name.empty()) {
     Molecules molecules;
     Contigs contigs;
     parse_molecule_file(molecules);

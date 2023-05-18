@@ -37,7 +37,7 @@ void show_usage(char *name) {
     << "======= Join ASM step ========\n"
     << "  * Inputs\n"
     << "    -f, --contigs         FILE   Input contigs in FASTA format\n"
-    << "    -l, --molecule        FILE   Input molecule file\n"
+    << "    -M, --inputMolecule   FILE   Input molecule file (output of previous step)\n"
     << "    -S, --inputSplit      FILE   Input split file in BED format (output of previous step)\n"
     << "    -w, --window          INT    Window size for barcode consideration (default: "                             << Globals::window                     << ")\n"
     << "  * Output\n"
