@@ -1,5 +1,6 @@
 #include <fstream>
 
+#include "constants.h"
 #include "interval.h"
 #include "graph.h"
 
@@ -25,7 +26,7 @@ void merge_close_contigs (RefIntervalsSet &refIntervalsSet) {
       refIntervals.erase(refIntervals.begin() + i + 1, refIntervals.end());
     }
   }
-  std::cerr << n_merges << " contig part merges.\n";
+  std::cerr << TAB << n_merges << " contig part merged.\n";
 }
 
 

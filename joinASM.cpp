@@ -5,6 +5,7 @@
 #include "joinASM.h"
 
 void join (Molecules &molecules, Contigs &contigs) {
+  std::cerr << "Joining contigs...\n";
   add_molecules_to_contigs_extremites(molecules, contigs);
   Graph graph;
   create_nodes(contigs, graph);

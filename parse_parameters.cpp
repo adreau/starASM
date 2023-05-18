@@ -4,11 +4,12 @@
 
 
 void show_usage(char *name) {
-  std::cerr << "Usage: " << name << " <option(s)> [ < SAM_file ]\n"
+  std::cerr << "Usage: " << name << " <option(s)>\n"
     << "Options:\n"
     << "    -h, --help                   Show this help message\n"
     << "=== Molecule creation step ===\n"
     << "  * Inputs\n"
+    << "    -i, --input           FILE   Reads file in SAM format\n"
     << "    -f, --contigs         FILE   Contig file name\n"
     << "  * Output\n"
     << "    -m, --outputMolecule  FILE   Output file name\n"
@@ -29,6 +30,7 @@ void show_usage(char *name) {
     << "    -t, --threshold       FLOAT  Stringency threshold, higher is less stringent (default "                     << Globals::threshold                  << ")\n"
     << "    -e, --sampleSize      INT    Sample size for outlier detection (0 = input size (default: "                 << Globals::n_sample                   << ")\n"
     << "    -z, --minSize         INT    Minimum contig size (default: "                                               << Globals::min_ctg_size               << ")\n"
+    << "    -E, --seed            INT    Seed (0 = time, default: "                                                    << Globals::seed                       << ")\n"
     << "  * Log files\n"
     << "    -a, --counts          FILE   Write raw counts to file\n"
     << "    -A, --scores          FILE   Write scores to file\n"
@@ -60,6 +62,8 @@ void parse_parameters (int argc, char* argv[]) {
     if ((arg == "-h") || (arg == "--help")) {
       show_usage(argv[0]);
       exit(EXIT_SUCCESS);
+    } else if ((arg == "-i") || (arg == "--input")){
+      Globals::input_file_name = argv[++i];
     } else if ((arg == "-f") || (arg == "--contigs")){
       Globals::contigs_file_name = argv[++i];
     } else if ((arg == "-m") || (arg == "--outputMolecule")){
@@ -86,6 +90,8 @@ void parse_parameters (int argc, char* argv[]) {
       Globals::n_sample = std::stoi(argv[++i]);
     } else if ((arg == "-z") || (arg == "--minSize")){
       Globals::min_ctg_size = std::stoi(argv[++i]);
+    } else if ((arg == "-E") || (arg == "--seed")){
+      Globals::seed = std::stoi(argv[++i]);
     } else if ((arg == "-a") || (arg == "--counts")) {
       Globals::counts_file_name = argv[++i];
     } else if ((arg == "-A") || (arg == "--scores")) {

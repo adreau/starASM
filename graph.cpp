@@ -1,6 +1,7 @@
 #include <cassert>
 #include <fstream>
 
+#include "constants.h"
 #include "globals.h"
 #include "contig.h"
 #include "graph.h"
@@ -15,7 +16,7 @@ void create_nodes (Contigs &contigs, Graph &graph) {
 }
 
 void create_cis_arcs (Contigs &contigs, Graph &graph) {
-  std::cerr << "Reconnecting split contigs.\n";
+  std::cerr << TAB << "Reconnecting split contigs...\n";
   unsigned int n_edges = 0;
   unsigned int n_possible_edges = 0;
   for (size_t nodeId = 1; nodeId < graph.nodes.size(); ++nodeId) {
@@ -29,16 +30,16 @@ void create_cis_arcs (Contigs &contigs, Graph &graph) {
         graph.add_edge(nodeId - 1, nodeId, Link_types::EB);
         ++n_edges;
       }
-      if (nodeId % 100 == 0) std::cerr << "\tNode #" << nodeId << " / " << graph.nodes.size() << ".\r" << std::flush;
+      if (nodeId % 100 == 0) std::cerr << TAB << TAB << "Split contig " << nodeId << "/" << graph.nodes.size() << "\r" << std::flush;
     }
   }
-  std::cerr << "\tNode #" << graph.nodes.size() << " / " << graph.nodes.size() << ".\n";
-  std::cerr << "\t" << n_edges << " edges added (out of " << n_possible_edges << " possible edges).\n";
+  std::cerr << TAB << TAB << "Split contig " << graph.nodes.size() << "/" << graph.nodes.size() << "\n";
+  std::cerr << TAB << TAB << n_edges << " edges added (out of " << n_possible_edges << " possible edges)\n";
 }
 
 
 void create_trans_arcs (Contigs &contigs, Graph &graph) {
-  std::cerr << "Connecting distant contigs.\n";
+  std::cerr << TAB << "Connecting distant contigs...\n";
   unsigned int edge_id       = 0;
   unsigned int n_edges       = 0;
   unsigned int total_n_edges = graph.nodes.size() * (graph.nodes.size() - 1) / 2;
@@ -64,12 +65,12 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
         graph.add_edge(nodeId1, nodeId2, Link_types::EE);
         ++n_edges;
       }
-      if (edge_id % 1000 == 0) std::cerr << "\tEdge #" << edge_id << " / " << total_n_edges << ".\r" << std::flush;
+      if (edge_id % 1000 == 0) std::cerr << TAB << TAB << "Edge " << edge_id << "/" << total_n_edges << "\r" << std::flush;
       ++edge_id;
     }
   }
-  std::cerr << "\tEdge #" << total_n_edges << " / " << total_n_edges << ".\n";
-  std::cerr << "\t" << n_edges << " edges added (out of " << total_n_edges << " possible edges).\n";
+  std::cerr << TAB << TAB << "Edge " << total_n_edges << "/" << total_n_edges << "\n";
+  std::cerr << TAB << TAB << n_edges << " edges added (out of " << total_n_edges << " possible edges)\n";
 }
 
 void create_arcs (Contigs &contigs, Graph &graph) {
@@ -131,7 +132,6 @@ void write_graph (Contigs &contigs, Graph &graph) {
 // Remove arcs when bifurcations are observed
 // Arcs are actually not removed, but replaced by -1
 void remove_bifurcations (Graph &graph) {
-
   unsigned int n_removed = 0;
   for (size_t nodeId = 0; nodeId < graph.nodes.size(); ++nodeId) {
     Node &node  = graph.nodes[nodeId];
@@ -172,5 +172,5 @@ void remove_bifurcations (Graph &graph) {
       }
     }
   }
-  std::cerr << "Removed " << n_removed << " / " << (2 * graph.nodes.size()) << " bifurcations.\n";
+  std::cerr << TAB << "Removed " << n_removed << "/" << (2 * graph.nodes.size()) << " bifurcations\n";
 }

@@ -41,6 +41,7 @@ void read_fasta () {
     std::cerr << "Error!  Cannot open file '" << Globals::contigs_file_name << "'.\n";
     exit(EXIT_FAILURE);
   }
+  std::cerr << "Reading FASTA file...\n";
   std::string ctg_line, ctg_name, ctg_seq;
   while (getline(ctg_fasta, ctg_line)) {
     if (! ctg_line.empty()) {
@@ -66,7 +67,7 @@ void read_fasta () {
     Globals::chr_sizes.push_back(ctg_seq.size());
   }
   ctg_fasta.close();
-  std::cout << "Read " << Globals::chrs.size() << " contigs.\n";
+  std::cerr << TAB << "Read " << Globals::chrs.size() << " contigs.\n";
   Globals::chrs.shrink_to_fit();
   Globals::chr_sizes.shrink_to_fit();
 }

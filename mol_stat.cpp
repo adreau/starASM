@@ -8,7 +8,6 @@
 #include "mol_stat.h"
 
 void compute_stats (Molecule_stats &molecule_stats, Molecules &molecules) {
-
   unsigned long cpt = 0;
   for (auto &molecule: molecules) {
     // Molecules are 0-based
@@ -27,15 +26,12 @@ void compute_stats (Molecule_stats &molecule_stats, Molecules &molecules) {
     }
     ++molecule_stats[molecule.chrid][window_start].start;
     ++molecule_stats[molecule.chrid][window_end].end;
-
     ++cpt;
-    if (cpt % 10000000 == 0) std::cerr << cpt << " lines read.\r" << std::flush;
+    if (cpt % 10000000 == 0) std::cerr << TAB << TAB << cpt << "/" << molecules.size() << " molecules\r" << std::flush;
   }
-  std::cerr << cpt << " lines read, done.\n";
-
+  std::cerr << TAB << TAB << molecules.size() << "/" << molecules.size() << " molecules\n";
   std::ofstream counts_file;
   if (! Globals::counts_file_name.empty()) counts_file.open(Globals::counts_file_name, std::ofstream::out);
-
   for (size_t chrid = 0; chrid < Globals::chrs.size(); ++chrid) {
     std::string &chr = Globals::chrs[chrid];
     unsigned long size = Globals::chr_sizes[chrid] / Globals::window;

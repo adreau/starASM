@@ -32,7 +32,7 @@ unsigned int count_n_reads (std::vector < std::vector < Read > > &reads) {
 }
 
 void trim_barcodes (Barcodes &barcodes) {
-  std::cerr << "Trimming barcodes...\n";
+  std::cerr << TAB << "Removing outlier barcodes...\n";
   auto it = barcodes.begin();
   while (it != barcodes.end()) {
     if (count_n_reads(it->second) < Globals::min_n_reads_barcode) it = barcodes.erase(it);
@@ -41,7 +41,7 @@ void trim_barcodes (Barcodes &barcodes) {
 }
 
 void sort_barcodes (Barcodes &barcodes) {
-  std::cerr << "Sorting " << barcodes.size() << " barcodes...\n";
+  std::cerr << TAB << "Sorting " << barcodes.size() << " barcodes...\n";
   for (auto &p: barcodes) {
     p.second.shrink_to_fit();
     for (auto &q: p.second) {
@@ -125,7 +125,7 @@ void join_to_molecules (Barcodes &barcodes, Molecules &molecules) {
 }
 
 void sort_molecules (Molecules &molecules) {
-  std::cerr << "Sorting " << molecules.size() << " molecules...\n";
+  std::cerr << TAB << "Sorting " << molecules.size() << " molecules...\n";
   molecules.shrink_to_fit();
   std::sort(molecules.begin(), molecules.end());
 }
@@ -145,6 +145,7 @@ void print_molecules (Molecules &molecules) {
 void make_molecules(Molecules &molecules) {
   Barcodes barcodes;
   read_sam(barcodes);
+  std::cerr << "Creating molecules from reads...\n";
   trim_barcodes(barcodes);
   sort_barcodes(barcodes);
   join_to_molecules(barcodes, molecules);

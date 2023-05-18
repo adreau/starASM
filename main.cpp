@@ -40,5 +40,6 @@ int main (int argc, char* argv[]) {
     parse_split_file(contigs);
     join(molecules, contigs);
   }
+  std::cerr << "Done.\n";
   return EXIT_SUCCESS;
 }

@@ -11,7 +11,6 @@
 unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2){
 
   std::vector < unsigned long int > common_barcodes;
-
   set_intersection(b1.begin(), b1.end(),
           b2.begin(), b2.end(),
           std::back_inserter(common_barcodes));
@@ -19,7 +18,6 @@ unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::
   size_t s2 = b2.size();
   size_t sc = common_barcodes.size();
   if (sc == 0) return 0;
-
   switch (Globals::condition) {
       case 1:
           if ((sc >= s1 * 0.8) && (sc >= s2 * 0.8)) return sc;
@@ -53,14 +51,13 @@ unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::
 
 // Find the number of common barcodes between contig ends
 void add_molecules_to_contigs_extremites (Molecules &molecules, Contigs &contigs) {
-
+  std::cerr << TAB << "Anchoring molecules...\n";
   unsigned long int barcode_id;
   std::unordered_map < std::string, unsigned long int > barcode_to_id;
   unsigned int n_barcodes_begin  = 0;
   unsigned int n_barcodes_end    = 0;
   unsigned int n_barcodes_other  = 0;
   unsigned int n_barcodes_unused = 0;
-
   std::ofstream mapping_file;
   if (! Globals::mapping_file_name.empty()) {
     mapping_file.open(Globals::mapping_file_name);
@@ -110,21 +107,21 @@ void add_molecules_to_contigs_extremites (Molecules &molecules, Contigs &contigs
         ++n_barcodes_unused;
       }
     }
-    if (i % 1000000 == 0) std::cerr << i << " molecules read.\r" << std::flush;
+    if (i % 1000000 == 0) std::cerr << TAB << TAB << i << "/" << molecules.size() << " molecules\r" << std::flush;
   }
-  std::cerr << i << " molecules read.\n";
-  std::cerr << n_barcodes_begin << " anchored on the left part, " <<
-    n_barcodes_end << " anchored on the right part, " <<
-    (n_barcodes_begin + n_barcodes_end + n_barcodes_other) << " anchored in general, and " <<
-    n_barcodes_unused << " unused.\n";
-  std::cerr << barcode_to_id.size() << " different barcodes seen.\n";
-  std::cerr << "Sorting barcodes:\n";
+  std::cerr << TAB << TAB << molecules.size() << "/" << molecules.size() <<  " molecules\n";
+  std::cerr << TAB << TAB << TAB << n_barcodes_begin << " anchored on the left part\n";
+  std::cerr << TAB << TAB << TAB << n_barcodes_end << " anchored on the right part\n";
+  std::cerr << TAB << TAB << TAB << (n_barcodes_begin + n_barcodes_end + n_barcodes_other) << " anchored in general\n";
+  std::cerr << TAB << TAB << TAB << n_barcodes_unused << " unused\n";
+  std::cerr << TAB << TAB << TAB << barcode_to_id.size() << " different barcodes seen\n";
+  std::cerr << TAB << "Sorting barcodes...\n";
   for (size_t i = 0; i < contigs.size(); ++i) {
     Contig &contig = contigs[i];
     contig.sort_barcodes();
-    if (i % 100 == 0) std::cerr << "\tContig #" << i << " / " << contigs.size() << ".\r" << std::flush;
+    if (i % 100 == 0) std::cerr << TAB << TAB << "Contig " << i << "/" << contigs.size() << "\r" << std::flush;
   }
-  std::cerr << "\tContig #" << contigs.size() << " / " << contigs.size() << ".\n";
+  std::cerr << TAB << TAB << "Contig " << contigs.size() << "/" << contigs.size() << "\n";
 }
 
 

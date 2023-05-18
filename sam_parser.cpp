@@ -1,6 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <string>
 
 #include "constants.h"
@@ -8,28 +9,6 @@
 #include "read.h"
 #include "molecule.h"
 #include "sam_parser.h"
-
-void add_chr (std::stringstream &split_line) {
-  std::string value;
-  split_line >> value;
-  assert(starts_with(value, SEQUENCE_NAME));
-  value = value.substr(SEQUENCE_NAME.size());
-  Globals::chrids[value] = Globals::chrs.size();
-  Globals::chrs.push_back(value);
-  split_line >> value;
-  assert(starts_with(value, SIZE_NAME));
-  value = value.substr(SIZE_NAME.size());
-  Globals::chr_sizes.push_back(std::stoul(value));
-}
-
-void read_header_line (std::string &line) {
-  std::stringstream split_line(line);
-  std::string value;
-  split_line >> value;
-  if (value == SEQUENCE_LINE) {
-    add_chr(split_line);
-  }
-}
 
 bool is_mapped (unsigned int flag) {
   return ((flag & 4) == 0);
@@ -147,6 +126,9 @@ bool read_main_line (Barcodes &barcodes, std::string &line) {
   unsigned long start = -1, end = -1;
   unsigned int mapq = -1;
   std::string barcode;
+  if (line[0] == '@') {
+    return false;
+  }
   if (parse_main_line(line, name, chrid, start, end, mapq, barcode)) {
     add_barcode(barcodes, name, chrid, start, end, mapq, barcode);
     return true;
@@ -154,44 +136,28 @@ bool read_main_line (Barcodes &barcodes, std::string &line) {
   return false;
 }
 
-void read_header(std::string &line) {
-  while (std::getline(std::cin, line)) {
-    if (line[0] == '@') {
-      read_header_line(line);
-    }
-    else {
-      return;
-    }
-  }
-}
-
-void read_main(Barcodes &barcodes, std::string &line) {
-  unsigned long int n_reads_kept = 0;
-  unsigned long int cpt = 1;
-  if (Globals::chrs.empty()) {
-    std::cerr << "Error!  No reference found in the sam file.\nIf you used 'samtools view', please add use 'samtools view -h' instead.\nExiting.\n";
+void read_sam (Barcodes &barcodes) {
+  if (Globals::input_file_name.empty()) {
+    std::cerr << "Error!  Input SAM file is missing.\n";
     exit(EXIT_FAILURE);
   }
-  Globals::chrs.shrink_to_fit();
-  Globals::chr_sizes.shrink_to_fit();
-  if (read_main_line(barcodes, line)) {
-    ++n_reads_kept;
+  std::ifstream input_file(Globals::input_file_name);
+  if (! input_file.is_open()) {
+    std::cerr << "Error!  Cannot open file SAM file '" << Globals::input_file_name << "'.\n";
+    exit(EXIT_FAILURE);
   }
-  for (; std::getline(std::cin, line); ++cpt) {
+  unsigned long int n_reads_kept = 0;
+  unsigned long int cpt = 0;
+  std::cerr << "Reading SAM file...\n";
+  std::string line;
+  for (; std::getline(input_file, line); ++cpt) {
     if (read_main_line(barcodes, line)) {
       ++n_reads_kept;
     }
+    ++cpt;
     if (cpt % 10000000 == 0) {
-      std::cerr << cpt << " reads read, " << n_reads_kept << " kept, using " << barcodes.size() << " barcodes." << "\r" << std::flush;
+      std::cerr << TAB << cpt << " lines read, " << n_reads_kept << " reads kept, using " << barcodes.size() << " barcodes.\r" << std::flush;
     }
   }
-  std::cerr << cpt << " reads read, " << n_reads_kept << " kept, using " << barcodes.size() << " barcodes." << "\n";
-}
-
-void read_sam (Barcodes &barcodes) {
-  std::cerr << "Reading SAM file from standard input.\n";
-  std::string line;
-  read_header(line);
-  std::cerr << "Seen " << Globals::chrs.size() << " references.\n";
-  read_main(barcodes, line);
+  std::cerr << TAB << cpt << " lines read, " << n_reads_kept << " reads kept, using " << barcodes.size() << " barcodes.\n";
 }

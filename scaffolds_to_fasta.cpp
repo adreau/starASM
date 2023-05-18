@@ -44,15 +44,15 @@ void extract_subsequence (RefInterval &refInterval, std::string &gap, std::strin
 }
 
 void scaffolds_to_fasta (RefIntervalsSet &refIntervalsSet) {
+  std::cerr << "Writing scaffolds...\n";
   std::string gap(Globals::filler_size, 'N');
   std::string sequence;
-  unsigned int n_scaffolds;
   std::ofstream output_file (Globals::output_file_name, std::ofstream::out);
   if (! output_file.is_open()){
       std::cerr << "Error!  Cannot open file '" << Globals::output_file_name << "'.\n";
       exit(EXIT_FAILURE);
   }
-  for (n_scaffolds = 0; n_scaffolds < refIntervalsSet.size(); ++n_scaffolds) {
+  for (unsigned int n_scaffolds = 0; n_scaffolds < refIntervalsSet.size(); ++n_scaffolds) {
     RefIntervals &refIntervals = refIntervalsSet[n_scaffolds];
     for (RefInterval &refInterval: refIntervals) {
       std::string current_sequence;
@@ -61,11 +61,10 @@ void scaffolds_to_fasta (RefIntervalsSet &refIntervalsSet) {
     }
     write_fasta_sequence(n_scaffolds + 1, sequence, output_file);
     sequence.clear();
-
     if (n_scaffolds % 100 == 0) {
-      std::cout << n_scaffolds << " lines read.\r" << std::flush;
+      std::cerr << TAB << n_scaffolds << "/" << refIntervalsSet.size() << " scaffolds\r" << std::flush;
     }
   }
   output_file.close();
-  std::cout << n_scaffolds << " lines read, done.\n";
+  std::cerr << TAB << refIntervalsSet.size() << "/" << refIntervalsSet.size() << " scaffolds\n";
 }

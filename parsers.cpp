@@ -42,5 +42,5 @@ void parse_split_file (Contigs &contigs) {
     ++pos_beg;
     contigs[Globals::chrids[ctg]].add_part(pos_beg, pos_end);
   }
-  std::cerr << n_contig_parts << " contig parts, seen.\n";
+  std::cerr << n_contig_parts << " contig parts seen.\n";
 }

@@ -25,11 +25,13 @@ struct Globals {
   static std::vector < std::size_t >                     chr_sizes;
   static Sequences                                       sequences;
 
+  static std::string   input_file_name;
   static unsigned int  max_read_distance;
   static unsigned int  min_mapq;
   static unsigned int  min_mapq_solid;
   static unsigned int  min_len_solid;
   static unsigned int  min_n_reads_barcode;
+  static unsigned long seed;
   static std::string   output_molecules_file_name;
   static std::string   output_split_file_name;
   static float         threshold;
