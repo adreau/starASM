@@ -61,16 +61,13 @@ unsigned int parse_cigar (std::string &cigar) {
 //  - flagged in proper pair
 //  - mapq is higher than threshold
 //  - barcode in BX tag is set
-bool parse_main_line (std::string &line, std::string &name, unsigned int &chrid, unsigned long &start, unsigned long &end, unsigned int &mapq, std::string &barcode) {
+bool parse_main_line (std::string &line, unsigned int &chrid, unsigned long &start, unsigned long &end, unsigned int &mapq, std::string &barcode) {
   std::stringstream split_line(line);
   std::string value;
   const unsigned int no_value = -1;
   unsigned int flag = no_value;
   for (unsigned int i = 0; split_line >> value; ++i) {
-    if (i == 0) {
-      name = value;
-    }
-    else if (i == 1) {
+    if (i == 1) {
       flag = std::stoi(value);
       if ((! is_mapped(flag)) || (is_duplicate(flag))) {
         return false;
@@ -111,17 +108,9 @@ bool parse_main_line (std::string &line, std::string &name, unsigned int &chrid,
   return true;
 }
 
-void add_barcode (Barcodes &barcodes, std::string &name, unsigned int chrid, unsigned long start, unsigned long end, unsigned int mapq, std::string &barcode) {
-  if (barcodes.find(barcode) == barcodes.end()) {
-    barcodes[barcode] = std::vector < std::vector < Read > > (Globals::chrs.size());
-  }
-  assert(chrid < Globals::chrs.size());
-  barcodes[barcode][chrid].emplace_back(name, start, end, mapq);
-}
-
+// Add the barcode count
 // Returns true iff read passed the filters
-bool read_main_line (Barcodes &barcodes, std::string &line) {
-  std::string name;
+bool add_barcode_count (Barcodes &barcodes, std::string &line) {
   unsigned int chrid = -1;
   unsigned long start = -1, end = -1;
   unsigned int mapq = -1;
@@ -129,18 +118,17 @@ bool read_main_line (Barcodes &barcodes, std::string &line) {
   if (line[0] == '@') {
     return false;
   }
-  if (parse_main_line(line, name, chrid, start, end, mapq, barcode)) {
-    add_barcode(barcodes, name, chrid, start, end, mapq, barcode);
+  if (parse_main_line(line, chrid, start, end, mapq, barcode)) {
+std::cerr << "previous count: " << barcodes.count_map[barcode] << ", ";
+    ++barcodes.count_map[barcode];
+std::cerr << "now: " << barcodes.count_map[barcode] << "\n";
     return true;
   }
   return false;
 }
 
-void read_sam (Barcodes &barcodes) {
-  if (Globals::input_file_name.empty()) {
-    std::cerr << "Error!  Input SAM file is missing.\n";
-    exit(EXIT_FAILURE);
-  }
+// Count the number of occurrences of each barcode
+void count_barcodes (Barcodes &barcodes) {
   std::ifstream input_file(Globals::input_file_name);
   if (! input_file.is_open()) {
     std::cerr << "Error!  Cannot open file SAM file '" << Globals::input_file_name << "'.\n";
@@ -148,16 +136,70 @@ void read_sam (Barcodes &barcodes) {
   }
   unsigned long int n_reads_kept = 0;
   unsigned long int cpt = 0;
-  std::cerr << "Reading SAM file...\n";
+  std::cerr << "Reading SAM file for barcode counting...\n";
   std::string line;
   for (; std::getline(input_file, line); ++cpt) {
-    if (read_main_line(barcodes, line)) {
+    if (add_barcode_count(barcodes, line)) {
       ++n_reads_kept;
     }
     ++cpt;
     if (cpt % 10000000 == 0) {
-      std::cerr << TAB << cpt << " lines read, " << n_reads_kept << " reads kept, using " << barcodes.size() << " barcodes.\r" << std::flush;
+      std::cerr << TAB << cpt << " lines read, " << n_reads_kept << " reads kept, using " << barcodes.count_map.size() << " barcodes.\r" << std::flush;
     }
   }
-  std::cerr << TAB << cpt << " lines read, " << n_reads_kept << " reads kept, using " << barcodes.size() << " barcodes.\n";
+  std::cerr << TAB << cpt << " lines read, " << n_reads_kept << " reads kept, using " << barcodes.count_map.size() << " barcodes.\n";
+}
+
+void add_barcode (Barcodes &barcodes, unsigned int chrid, unsigned long start, unsigned long end, unsigned int mapq, const std::string &barcode) {
+  auto it = barcodes.ids.find(barcode);
+  if (it == barcodes.ids.end()) {
+    return;
+  }
+  unsigned int id = it->second;
+  barcodes.reads[barcodes.current_offsets[id]] = Read(1000, chrid, start, end, mapq);
+  ++barcodes.current_offsets[id];
+  assert(chrid < Globals::chrs.size());
+}
+
+void add_barcode_line (Barcodes &barcodes, std::string &line) {
+  unsigned int chrid = -1;
+  unsigned long start = -1, end = -1;
+  unsigned int mapq = -1;
+  std::string barcode;
+  if (line[0] == '@') {
+    return;
+  }
+  if (parse_main_line(line, chrid, start, end, mapq, barcode)) {
+    add_barcode(barcodes, chrid, start, end, mapq, barcode);
+  }
+}
+
+void add_barcodes (Barcodes &barcodes) {
+  std::ifstream input_file(Globals::input_file_name);
+  if (! input_file.is_open()) {
+    std::cerr << "Error!  Cannot open file SAM file '" << Globals::input_file_name << "'.\n";
+    exit(EXIT_FAILURE);
+  }
+  unsigned long int cpt = 0;
+  std::cerr << "Reading SAM file for barcode storing...\n";
+  std::string line;
+  for (; std::getline(input_file, line); ++cpt) {
+    add_barcode_line(barcodes, line);
+    ++cpt;
+    if (cpt % 10000000 == 0) {
+      std::cerr << TAB << cpt << " lines read.\r" << std::flush;
+    }
+  }
+  barcodes.current_offsets.clear();
+  std::cerr << TAB << cpt << " lines read.\n";
+}
+
+void read_sam (Barcodes &barcodes) {
+  if (Globals::input_file_name.empty()) {
+    std::cerr << "Error!  Input SAM file is missing.\n";
+    exit(EXIT_FAILURE);
+  }
+  count_barcodes(barcodes);
+  barcodes.set_structure();
+  add_barcodes(barcodes);
 }

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "globals.h"
 
 std::vector < std::string >                     Globals::chrs;
@@ -43,4 +44,8 @@ bool starts_with(const std::string &s1, const std::string &s2) {
   return s1.rfind(s2, 0) == 0;
 }
 
-
+unsigned int count_different (std::vector < unsigned long > &names) {
+  std::sort(names.begin(), names.end());
+  auto last = std::unique(names.begin(), names.end());
+  return std::distance(names.begin(), last);
+}

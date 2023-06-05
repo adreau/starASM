@@ -71,6 +71,7 @@ using Molecule_stats = std::vector < std::vector < Molecule_stat > >;
 
 
 bool starts_with (const std::string &s1, const std::string &s2);
+unsigned int count_different (std::vector < unsigned long > &names);
 
 
 #endif
