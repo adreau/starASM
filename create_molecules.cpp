@@ -55,13 +55,13 @@ void sort_barcodes (Barcodes &barcodes) {
 
 // Returns the index of the last read of the current split.
 //   A split is made iff the distance between consecutive reads is greater than max_read_distance
-unsigned int find_first_split (Barcodes &barcodes, unsigned int start_id) {
-  for (unsigned int prev = start_id, next = start_id + 1; next < barcodes.reads.size(); ++prev, ++next) {
+unsigned int find_first_split (Barcodes &barcodes, unsigned int start_id, unsigned int end_id) {
+  for (unsigned int prev = start_id, next = start_id + 1; next < end_id; ++prev, ++next) {
     if (barcodes.reads[prev].get_distance(barcodes.reads[next]) > Globals::max_read_distance) {
       return next;
     }
   }
-  return barcodes.reads.size();
+  return end_id;
 }
 
 // Returns true iff at least one reads has the given mapq
@@ -93,13 +93,14 @@ bool find_solid_ends (std::vector < Read > &reads, unsigned int start_id, unsign
 }
 
 void add_molecule (Molecules &molecules, Barcodes &barcodes, unsigned int start_id, unsigned int end_id, const std::string &barcode, unsigned int chrid) {
-  assert(start_id <= end_id);
+  assert(start_id < end_id);
   assert(end_id <= barcodes.reads.size());
   std::vector < unsigned long > names;
   names.reserve(end_id - start_id);
   for (unsigned int id = start_id; id < end_id; ++id) {
     names.push_back(barcodes.reads[id].name);
   }
+  assert(barcodes.reads[start_id].start < barcodes.reads[end_id - 1].end);
   molecules.emplace_back(chrid, barcodes.reads[start_id].start, barcodes.reads[end_id - 1].end, barcode, count_different(names));
 }
 
@@ -107,7 +108,7 @@ void _join_to_molecules (Molecules &molecules, Barcodes &barcodes, const std::st
   unsigned int next_id;
   unsigned int start_solid_id, end_solid_id;
   do {
-    next_id = find_first_split(barcodes, start_id);
+    next_id = find_first_split(barcodes, start_id, end_id);
     assert(next_id <= barcodes.reads.size());
     if (check_min_mapq(barcodes.reads, start_id, next_id) && find_solid_ends(barcodes.reads, start_id, next_id, start_solid_id, end_solid_id)) {
       add_molecule(molecules, barcodes, start_solid_id, end_solid_id, barcode, chrid);

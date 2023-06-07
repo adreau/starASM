@@ -24,7 +24,7 @@ struct Interval {
   }
 
   unsigned long int get_distance (const Interval &i) {
-    return std::min(abs(start - i.end), abs(end - i.start));
+    return std::min(std::abs(static_cast < long > (start - i.end)), std::abs(static_cast < long > (end - i.start)));
   }
 
   void merge (Interval &i) {

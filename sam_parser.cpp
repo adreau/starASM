@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 
+#include "htslib/sam.h"
 #include "constants.h"
 #include "globals.h"
 #include "read.h"
@@ -11,11 +12,11 @@
 #include "sam_parser.h"
 
 bool is_mapped (unsigned int flag) {
-  return ((flag & 4) == 0);
+  return ((flag & BAM_FUNMAP) == 0);
 }
 
 bool is_duplicate (unsigned int flag) {
-  return ((flag & 1024) != 0);
+  return ((flag & BAM_FDUP) != 0);
 }
 
 // Return the match length
@@ -90,11 +91,13 @@ bool parse_main_line (std::string &line, unsigned int &chrid, unsigned long &sta
       }
     }
     else if (i == 5) {
+    //hts_pos_t bam_endpos(const bam1_t *b);
       end = start + parse_cigar(value);
     }
     else if (i >= 11) {
       if (starts_with(value, BARCODE_FLAG)) {
-        barcode = value.substr(BARCODE_FLAG.size());
+        barcode = value.substr(6);
+        //barcode = value.substr(BARCODE_FLAG.size());
       }
     }
   }
@@ -108,20 +111,34 @@ bool parse_main_line (std::string &line, unsigned int &chrid, unsigned long &sta
   return true;
 }
 
-// Add the barcode count
-// Returns true iff read passed the filters
-bool add_barcode_count (Barcodes &barcodes, std::string &line) {
-  unsigned int chrid = -1;
-  unsigned long start = -1, end = -1;
-  unsigned int mapq = -1;
-  std::string barcode;
-  if (line[0] == '@') {
+// Returns true iff:
+//  - read is mapped
+//  - flagged in proper pair
+//  - mapq is higher than threshold
+//  - barcode in BX tag is set
+bool filter_line (bam1_t *aln, kstring_t *kbarcode) {
+  unsigned int flag = aln->core.flag;
+  if ((! is_mapped(flag)) || (is_duplicate(flag))) {
     return false;
   }
-  if (parse_main_line(line, chrid, start, end, mapq, barcode)) {
-std::cerr << "previous count: " << barcodes.count_map[barcode] << ", ";
+  if (aln->core.tid == -1) {
+    return false;
+  }
+  if (aln->core.qual < Globals::min_mapq) {
+    return false;
+  }
+  if (bam_aux_get_str(aln, BARCODE_FLAG, kbarcode) <= 0) {
+    return false;
+  }
+  return true;
+}
+
+// Add the barcode count
+// Returns true iff read passed the filters
+bool add_barcode_count (Barcodes &barcodes, bam1_t *aln, kstring_t *kbarcode) {
+  if (filter_line(aln, kbarcode)) {
+    std::string barcode (ks_str(kbarcode), ks_len(kbarcode));
     ++barcodes.count_map[barcode];
-std::cerr << "now: " << barcodes.count_map[barcode] << "\n";
     return true;
   }
   return false;
@@ -129,68 +146,72 @@ std::cerr << "now: " << barcodes.count_map[barcode] << "\n";
 
 // Count the number of occurrences of each barcode
 void count_barcodes (Barcodes &barcodes) {
-  std::ifstream input_file(Globals::input_file_name);
-  if (! input_file.is_open()) {
-    std::cerr << "Error!  Cannot open file SAM file '" << Globals::input_file_name << "'.\n";
-    exit(EXIT_FAILURE);
-  }
+  samFile          *fp           = hts_open(Globals::input_file_name.c_str(), "r");
+  bam_hdr_t        *bam_hdr      = sam_hdr_read(fp);
   unsigned long int n_reads_kept = 0;
-  unsigned long int cpt = 0;
+  unsigned long int cpt          = 0;
   std::cerr << "Reading SAM file for barcode counting...\n";
-  std::string line;
-  for (; std::getline(input_file, line); ++cpt) {
-    if (add_barcode_count(barcodes, line)) {
+  bam1_t *aln = bam_init1();
+  kstring_t kbarcode = KS_INITIALIZE;
+  ks_initialize(&kbarcode);
+  while (sam_read1(fp, bam_hdr, aln) > 0){
+    if (add_barcode_count(barcodes, aln, &kbarcode)) {
       ++n_reads_kept;
     }
+    ks_clear(&kbarcode);
     ++cpt;
     if (cpt % 10000000 == 0) {
       std::cerr << TAB << cpt << " lines read, " << n_reads_kept << " reads kept, using " << barcodes.count_map.size() << " barcodes.\r" << std::flush;
     }
   }
+  ks_free(&kbarcode);
+  bam_destroy1(aln);
+  bam_hdr_destroy(bam_hdr);
+  hts_close(fp);
   std::cerr << TAB << cpt << " lines read, " << n_reads_kept << " reads kept, using " << barcodes.count_map.size() << " barcodes.\n";
 }
 
-void add_barcode (Barcodes &barcodes, unsigned int chrid, unsigned long start, unsigned long end, unsigned int mapq, const std::string &barcode) {
+void add_barcode (Barcodes &barcodes, const std::string &name, unsigned int chrid, unsigned long start, unsigned long end, unsigned int mapq, const std::string &barcode) {
   auto it = barcodes.ids.find(barcode);
   if (it == barcodes.ids.end()) {
     return;
   }
   unsigned int id = it->second;
-  barcodes.reads[barcodes.current_offsets[id]] = Read(1000, chrid, start, end, mapq);
+  assert(start < end);
+  barcodes.reads[barcodes.current_offsets[id]] = Read(std::hash<std::string>{}(name), chrid, start, end, mapq);
   ++barcodes.current_offsets[id];
   assert(chrid < Globals::chrs.size());
 }
 
-void add_barcode_line (Barcodes &barcodes, std::string &line) {
-  unsigned int chrid = -1;
-  unsigned long start = -1, end = -1;
-  unsigned int mapq = -1;
-  std::string barcode;
-  if (line[0] == '@') {
-    return;
-  }
-  if (parse_main_line(line, chrid, start, end, mapq, barcode)) {
-    add_barcode(barcodes, chrid, start, end, mapq, barcode);
+void add_barcode_line (Barcodes &barcodes, bam1_t *aln, kstring_t *kbarcode) {
+  if (filter_line(aln, kbarcode)) {
+    std::string barcode (ks_str(kbarcode), ks_len(kbarcode));
+    std::string name (bam_get_qname(aln), aln->core.l_qname);
+    add_barcode(barcodes, name, aln->core.tid, aln->core.pos, bam_endpos(aln), aln->core.qual, barcode);
+    ks_clear(kbarcode);
   }
 }
 
 void add_barcodes (Barcodes &barcodes) {
-  std::ifstream input_file(Globals::input_file_name);
-  if (! input_file.is_open()) {
-    std::cerr << "Error!  Cannot open file SAM file '" << Globals::input_file_name << "'.\n";
-    exit(EXIT_FAILURE);
-  }
-  unsigned long int cpt = 0;
+  samFile          *fp      = hts_open(Globals::input_file_name.c_str(), "r");
+  bam_hdr_t        *bam_hdr = sam_hdr_read(fp);
+  unsigned long int cpt     = 0;
   std::cerr << "Reading SAM file for barcode storing...\n";
-  std::string line;
-  for (; std::getline(input_file, line); ++cpt) {
-    add_barcode_line(barcodes, line);
+  bam1_t *aln = bam_init1();
+  kstring_t kbarcode = KS_INITIALIZE;
+  ks_initialize(&kbarcode);
+  while (sam_read1(fp, bam_hdr, aln) > 0){
+    add_barcode_line(barcodes, aln, &kbarcode);
     ++cpt;
-    if (cpt % 10000000 == 0) {
+    if (cpt % 1000000 == 0) {
       std::cerr << TAB << cpt << " lines read.\r" << std::flush;
     }
   }
   barcodes.current_offsets.clear();
+  ks_free(&kbarcode);
+  bam_destroy1(aln);
+  bam_hdr_destroy(bam_hdr);
+  hts_close(fp);
   std::cerr << TAB << cpt << " lines read.\n";
 }
 
