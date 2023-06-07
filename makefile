@@ -3,8 +3,11 @@ OBJS=$(SRCS:.cpp=.o )
 
 all: starASM
 
-starASM: $(OBJS)
-	g++ -g -fsanitize=address -std=c++11 -Wall -pedantic -O3 -lhts -o starASM $(OBJS)
+starASM: $(OBJS) ./htslib/libhts.so
+	g++ -g -fsanitize=address -std=c++11 -Wall -pedantic -O3 -o starASM $(OBJS) ./htslib/libhts.so
+
+./htslib/libhts.so:
+	cd htslib && make
 
 %.o: %.cpp
 	g++ -g -fsanitize=address -std=c++11 -Wall -pedantic -O3 -c $< -o $@
