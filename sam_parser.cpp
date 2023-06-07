@@ -4,7 +4,7 @@
 #include <fstream>
 #include <string>
 
-#include "htslib/sam.h"
+#include "htslib/htslib/sam.h"
 #include "constants.h"
 #include "globals.h"
 #include "read.h"
