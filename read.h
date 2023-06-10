@@ -26,6 +26,9 @@ inline bool operator< (const Read& lhs, const Read& rhs) {
   if (lhs.chrid < rhs.chrid) {
     return true;
   }
+  if (lhs.chrid > rhs.chrid) {
+    return false;
+  }
   return (lhs.start < rhs.start);
 }
 
