@@ -198,7 +198,7 @@ void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
     std::cerr << TAB << "Splitting contig " << chrid << "/" << nchrs << "\r" << std::flush;
   }
   std::cerr << TAB << "Splitting contig " << nchrs << "/" << nchrs << "\n";
-  std::cerr << TAB << TAB << "Kept " << n_kept_chrs << " contig(s), " << n_bins_removed << " bin(s) were removed, and " << n_cuts << " contig part(s) were created.\n";
+  std::cerr << TAB << TAB << "Kept " << n_kept_chrs << " contigs, " << n_bins_removed << "/" << n_elements << " bins were removed, and " << n_cuts << " contig parts were created.\n";
   if (! Globals::output_split_file_name.empty()) output_file.close();
   if (! Globals::scores_file_name.empty()) scores_file.close();
 }

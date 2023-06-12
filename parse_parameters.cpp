@@ -52,7 +52,9 @@ void show_usage(char *name) {
     << "  * Log files\n"
     << "    -F, --scaffolds       FILE   Output scaffolds file name\n"
     << "    -g, --graph           FILE   Output in GFA format\n"
-    << "    -p, --mapping         FILE   Where the molecule map with respect to the contigs\n";
+    << "    -p, --mapping         FILE   Output where the molecule map with respect to the contigs\n"
+    << "    -C, --cisLinks        FILE   Output links between previous split contig parts\n"
+    << "    -T, --transLinks      FILE   Output links between different contig parts\n";
 }
 
 
@@ -118,6 +120,10 @@ void parse_parameters (int argc, char* argv[]) {
       Globals::graph_file_name = argv[++i];
     } else if ((arg == "-p") || (arg == "--mapping")){
       Globals::mapping_file_name = argv[++i];
+    } else if ((arg == "-C") || (arg == "--cisLinks")){
+      Globals::cis_link_file_name = argv[++i];
+    } else if ((arg == "-T") || (arg == "--transLinks")){
+      Globals::trans_link_file_name = argv[++i];
     } else {
       std::cerr << "Error!  Parameter '" << argv[i] << "' is not understood.\nExiting.\n";
       exit(EXIT_FAILURE);

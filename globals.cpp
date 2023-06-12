@@ -36,6 +36,8 @@ std::string   Globals::graph_file_name;
 std::string   Globals::molecule_file_name;
 std::string   Globals::scaffold_file_name;
 std::string   Globals::mapping_file_name;
+std::string   Globals::cis_link_file_name;
+std::string   Globals::trans_link_file_name;
 std::string   Globals::output_file_name;
 unsigned int  Globals::filler_size            {                100 };
 

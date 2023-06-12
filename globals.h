@@ -53,6 +53,8 @@ struct Globals {
   static std::string   molecule_file_name;
   static std::string   scaffold_file_name;
   static std::string   mapping_file_name;
+  static std::string   cis_link_file_name;
+  static std::string   trans_link_file_name;
   static std::string   output_file_name;
   static unsigned int  filler_size;
 };
