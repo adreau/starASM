@@ -120,8 +120,11 @@ void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
   if (! Globals::scores_file_name.empty()) scores_file.open(Globals::scores_file_name, std::ofstream::out);
   if (! Globals::output_split_file_name.empty()) output_file.open(Globals::output_split_file_name, std::ofstream::out);
 
-  size_t nchrs = Globals::chrs.size();
-  size_t n_elements = 0;
+  size_t       nchrs          = Globals::chrs.size();
+  size_t       n_elements     = 0;
+  unsigned int n_bins_removed = 0;
+  unsigned int n_cuts         = 0;
+  unsigned int n_kept_chrs    = 0;
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     n_elements += molecule_stats[chrid].size();
   }
@@ -158,6 +161,7 @@ void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
               unsigned int start = bin_frag_start * Globals::window;
               unsigned int end   = pos * Globals::window;
               contigs[chrid].add_part(start, end);
+			  ++n_cuts;
               // Output in BED format
               if (! Globals::output_split_file_name.empty()) {
                 output_file << ctg << TAB << start << TAB << end << '\n';
@@ -166,6 +170,7 @@ void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
           }
         }
         incut = true;
+        ++n_bins_removed;
       }
       else if (incut) {
         incut          = false;
@@ -177,18 +182,23 @@ void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
           (pos + 1) * Globals::window << TAB <<
           score_all_values[cpt] << '\n';
     }
-    std::cerr << TAB << "Splitting contig " << chrid << "/" << nchrs << "\r" << std::flush;
     if (! incut) {
       unsigned int start = bin_frag_start * Globals::window;
       unsigned int end   = Globals::chr_sizes[chrid];
       contigs[chrid].add_part(start, end);
+	  ++n_cuts;
       // Output in BED format
       if (! Globals::output_split_file_name.empty()) {
-                output_file << ctg << TAB << start << TAB << end << '\n';
+        output_file << ctg << TAB << start << TAB << end << '\n';
       }
     }
+    if (! contigs[chrid].empty()) {
+      ++n_kept_chrs;
+	}
+    std::cerr << TAB << "Splitting contig " << chrid << "/" << nchrs << "\r" << std::flush;
   }
   std::cerr << TAB << "Splitting contig " << nchrs << "/" << nchrs << "\n";
+  std::cerr << TAB << TAB << "Kept " << n_kept_chrs << " contig(s), " << n_bins_removed << " bin(s) were removed, and " << n_cuts << " contig part(s) were created.\n";
   if (! Globals::output_split_file_name.empty()) output_file.close();
   if (! Globals::scores_file_name.empty()) scores_file.close();
 }

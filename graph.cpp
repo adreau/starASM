@@ -65,11 +65,11 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
         graph.add_edge(nodeId1, nodeId2, Link_types::EE);
         ++n_edges;
       }
-      if (edge_id % 1000 == 0) std::cerr << TAB << TAB << "Edge " << edge_id << "/" << total_n_edges << "\r" << std::flush;
+      if (edge_id % 1000 == 0) std::cerr << TAB << TAB << "Inspecting edge " << edge_id << "/" << total_n_edges << "\r" << std::flush;
       ++edge_id;
     }
   }
-  std::cerr << TAB << TAB << "Edge " << total_n_edges << "/" << total_n_edges << "\n";
+  std::cerr << TAB << TAB << "Inspecting edge " << total_n_edges << "/" << total_n_edges << "\n";
   std::cerr << TAB << TAB << n_edges << " edges added (out of " << total_n_edges << " possible edges)\n";
 }
 

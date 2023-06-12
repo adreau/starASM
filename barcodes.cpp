@@ -22,7 +22,7 @@ void Barcodes::trim () {
       ++cpt;
     }
   }
-  std::cerr << TAB << TAB << cpt << " / " << ids.size() << " barcodes removed.\n";
+  std::cerr << TAB << TAB << cpt << "/" << ids.size() << " barcodes removed.\n";
 }
 
 void Barcodes::sort () {

@@ -48,6 +48,10 @@ struct Contig {
 
   std::vector < ContigPart > contigParts;
 
+  bool empty () const {
+    return contigParts.empty();
+  }
+
   void add_part (unsigned long int pos_beg, unsigned long int pos_end) {
     contigParts.emplace_back(pos_beg, pos_end);
   }
