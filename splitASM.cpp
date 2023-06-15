@@ -21,5 +21,5 @@ void split (Molecules &molecules, Contigs &contigs) {
   initialize_stats(molecule_stats);
   std::cerr << TAB << "Computing stats...\n";
   compute_stats(molecule_stats, molecules);
-  detect_outliers(molecule_stats, contigs);
+  split_contigs(molecule_stats, contigs);
 }

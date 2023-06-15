@@ -4,6 +4,6 @@
 #include "globals.h"
 #include "contig.h"
 
-void detect_outliers(Molecule_stats &molecule_stats, Contigs &contigs);
+void split_contigs (Molecule_stats &molecule_stats, Contigs &contigs);
 
 #endif

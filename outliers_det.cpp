@@ -113,24 +113,21 @@ void compute_score (std::vector<double> &stat, unsigned long n, long d, unsigned
   qsp(stat, n, d, n_sample, score);
 }
 
-
-void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
-  std::ofstream output_file;
-  std::ofstream scores_file;
-  if (! Globals::scores_file_name.empty()) scores_file.open(Globals::scores_file_name, std::ofstream::out);
-  if (! Globals::output_split_file_name.empty()) output_file.open(Globals::output_split_file_name, std::ofstream::out);
-
-  size_t       nchrs          = Globals::chrs.size();
-  size_t       n_elements     = 0;
-  unsigned int n_bins_removed = 0;
-  unsigned int n_cuts         = 0;
-  unsigned int n_kept_chrs    = 0;
-  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
-    n_elements += molecule_stats[chrid].size();
+double compute_threshold (std::vector < double > &scores, size_t n_elements) {
+  double threshold = Globals::threshold;
+  if (threshold != 0.0) {
+    return threshold;
   }
+  std::sort(scores.begin(), scores.end());
+  double q1 = scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.25))];
+  double q3 = scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.75))];
+  double iqr = q3 - q1;
+  return q3 + 1.5 * iqr;
+}
+
+void detect_outliers (Molecule_stats &molecule_stats, std::vector < double > &scores, std::vector < bool > &outliers, size_t n_elements, size_t nchrs) {
   int d = 5;
   std::vector < double > all_values (d * n_elements);
-  std::vector < double > score_all_values (n_elements);
   size_t cpt = 0;
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     for (size_t i = 0; i < molecule_stats[chrid].size(); ++i) {
@@ -142,16 +139,31 @@ void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
     }
   }
   assert(cpt == d * n_elements);
-  compute_score(all_values, n_elements, d, Globals::n_sample, score_all_values);
+  compute_score(all_values, n_elements, d, Globals::n_sample, scores);
+  double threshold = compute_threshold(scores, n_elements);
+  std::cerr << TAB << TAB << "Using a threshold of " << threshold << "\n";
+  for (size_t i = 0; i < n_elements; ++i) {
+    outliers[i] = (scores[i] <= threshold);
+  }
+}
+
+void split (Molecule_stats &molecule_stats, Contigs &contigs, std::vector < double > &scores, std::vector < bool > &outliers, size_t n_elements, size_t nchrs) {
+  std::ofstream output_file;
+  std::ofstream scores_file;
+  if (! Globals::scores_file_name.empty()) scores_file.open(Globals::scores_file_name, std::ofstream::out);
+  if (! Globals::output_split_file_name.empty()) output_file.open(Globals::output_split_file_name, std::ofstream::out);
+  unsigned int  n_bins_removed = 0;
+  unsigned int  n_cuts         = 0;
+  unsigned int  n_kept_chrs    = 0;
+  unsigned long cpt            = 0;
   contigs.resize(Globals::chrs.size());
-  cpt = 0;
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     unsigned int npos           = molecule_stats[chrid].size();
     bool         incut          = false;
     unsigned int bin_frag_start = 0;
     std::string &ctg            = Globals::chrs[chrid];
     for (unsigned int pos = 0; pos < npos; ++pos, ++cpt) {
-      if (score_all_values[cpt] > Globals::threshold) {
+      if (outliers[cpt]) {
         if (! incut) {
           // Check contig size
           int size = (pos - bin_frag_start) * Globals::window;
@@ -180,7 +192,7 @@ void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
           ctg                         << TAB <<
           pos * Globals::window + 1   << TAB <<
           (pos + 1) * Globals::window << TAB <<
-          score_all_values[cpt] << '\n';
+          scores[cpt] << '\n';
     }
     if (! incut) {
       unsigned int start = bin_frag_start * Globals::window;
@@ -197,8 +209,21 @@ void detect_outliers (Molecule_stats &molecule_stats, Contigs &contigs) {
 	}
     std::cerr << TAB << "Splitting contig " << chrid << "/" << nchrs << "\r" << std::flush;
   }
+  assert(cpt == n_elements);
   std::cerr << TAB << "Splitting contig " << nchrs << "/" << nchrs << "\n";
   std::cerr << TAB << TAB << "Kept " << n_kept_chrs << " contigs, " << n_bins_removed << "/" << n_elements << " bins were removed, and " << n_cuts << " contig parts were created.\n";
   if (! Globals::output_split_file_name.empty()) output_file.close();
   if (! Globals::scores_file_name.empty()) scores_file.close();
+}
+
+void split_contigs (Molecule_stats &molecule_stats, Contigs &contigs) {
+  size_t       nchrs          = Globals::chrs.size();
+  size_t       n_elements     = 0;
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    n_elements += molecule_stats[chrid].size();
+  }
+  std::vector < double > scores (n_elements);
+  std::vector < bool > outliers (n_elements);
+  detect_outliers(molecule_stats, scores, outliers, n_elements, nchrs);
+  split(molecule_stats, contigs, scores, outliers, n_elements, nchrs);
 }
