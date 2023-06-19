@@ -118,9 +118,10 @@ double compute_threshold (std::vector < double > &scores, size_t n_elements) {
   if (threshold != 0.0) {
     return threshold;
   }
-  std::sort(scores.begin(), scores.end());
-  double q1 = scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.25))];
-  double q3 = scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.75))];
+  std::vector < double > &sorted_scores = scores;
+  std::sort(sorted_scores.begin(), sorted_scores.end());
+  double q1 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.25))];
+  double q3 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.75))];
   double iqr = q3 - q1;
   return q3 + 1.5 * iqr;
 }
@@ -207,7 +208,9 @@ void split (Molecule_stats &molecule_stats, Contigs &contigs, std::vector < doub
     if (! contigs[chrid].empty()) {
       ++n_kept_chrs;
 	}
-    std::cerr << TAB << "Splitting contig " << chrid << "/" << nchrs << "\r" << std::flush;
+    if (chrid % 100 == 0) {
+      std::cerr << TAB << "Splitting contig " << chrid << "/" << nchrs << "\r" << std::flush;
+    }
   }
   assert(cpt == n_elements);
   std::cerr << TAB << "Splitting contig " << nchrs << "/" << nchrs << "\n";
