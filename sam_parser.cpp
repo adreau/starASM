@@ -150,7 +150,7 @@ void count_barcodes (Barcodes &barcodes) {
   bam_hdr_t        *bam_hdr      = sam_hdr_read(fp);
   unsigned long int n_reads_kept = 0;
   unsigned long int cpt          = 0;
-  std::cerr << "Reading SAM file for barcode counting...\n";
+  std::cerr << "Reading BAM file for barcode counting...\n";
   bam1_t *aln = bam_init1();
   kstring_t kbarcode = KS_INITIALIZE;
   ks_initialize(&kbarcode);
@@ -196,7 +196,7 @@ void add_barcodes (Barcodes &barcodes) {
   samFile          *fp      = hts_open(Globals::input_file_name.c_str(), "r");
   bam_hdr_t        *bam_hdr = sam_hdr_read(fp);
   unsigned long int cpt     = 0;
-  std::cerr << "Reading SAM file for barcode storing...\n";
+  std::cerr << "Reading BAM file for barcode storing...\n";
   bam1_t *aln = bam_init1();
   kstring_t kbarcode = KS_INITIALIZE;
   ks_initialize(&kbarcode);
@@ -217,7 +217,7 @@ void add_barcodes (Barcodes &barcodes) {
 
 void read_sam (Barcodes &barcodes) {
   if (Globals::input_file_name.empty()) {
-    std::cerr << "Error!  Input SAM file is missing.\n";
+    std::cerr << "Error!  Input BAM file is missing.\n";
     exit(EXIT_FAILURE);
   }
   count_barcodes(barcodes);

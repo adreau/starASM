@@ -9,7 +9,7 @@ void show_usage(char *name) {
     << "    -h, --help                   Show this help message\n"
     << "=== Molecule creation step ===\n"
     << "  * Inputs\n"
-    << "    -i, --input           FILE   Reads file in SAM format\n"
+    << "    -i, --input           FILE   Reads file in BAM format\n"
     << "    -f, --contigs         FILE   Contig file name\n"
     << "  * Output\n"
     << "    -m, --outputMolecule  FILE   Output file name\n"

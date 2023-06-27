@@ -16,7 +16,7 @@ int main (int argc, char* argv[]) {
   Sequences sequences;
   read_fasta();
 
-  // start with SAM file
+  // start with BAM file
   if (Globals::input_molecules_file_name.empty()) {
     Molecules molecules;
     Contigs contigs;
