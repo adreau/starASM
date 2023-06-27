@@ -22,7 +22,7 @@ void compute_stats (Molecule_stats &molecule_stats, Molecules &molecules) {
       unsigned int size = end_window - beg_window + 1;
       molecule_stats[molecule.chrid][windowid].coverage     += size;
       molecule_stats[molecule.chrid][windowid].length       += molecule_size * size;
-      molecule_stats[molecule.chrid][windowid].read_density += molecule.n_reads / molecule_size * size;
+      molecule_stats[molecule.chrid][windowid].read_density += static_cast < double > (molecule.n_reads) / molecule_size * size;
     }
     ++molecule_stats[molecule.chrid][window_start].start;
     ++molecule_stats[molecule.chrid][window_end].end;

@@ -69,7 +69,37 @@ void qsp(std::vector < double > &X, unsigned long n, int d, unsigned long n_samp
   std::cerr << TAB << TAB << "Reading bin " << n << "/" << n << "\n";
 }
 
+bool is_vector_constant (std::vector < double > &X) {
+  double value = X.front();
+  for (double x: X) {
+    if (x != value) {
+      return false;
+	}
+  }
+  return true;
+}
 
+void normalize(std::vector < double > &X, unsigned long n) {
+  double mean = 0.0;
+  double sd   = 0.0;
+  for (double x: X) {
+    mean += x;
+  }
+  mean /= n;
+  if (is_vector_constant(X)) {
+    return;
+  }
+  for (double x: X) {
+    sd += (x - mean) * (x - mean);
+  }
+  sd = sqrt(sd / (n - 1)); // unbiased SD
+  for (unsigned long i = 0; i < n; i++) {
+    X[i] /= sd;
+  }
+}
+
+
+/*
 // normalization of data (divide by SDs for each dimension)
 void normalize(std::vector < double > &X, unsigned long n, int d) {
   std::vector < double > X_means (d, 0);
@@ -95,15 +125,18 @@ void normalize(std::vector < double > &X, unsigned long n, int d) {
       for (unsigned long i = 0; i < n; i++)
         sum += (X[i * d + j] - X_means[j]) * (X[i * d + j] - X_means[j]);
       sum = sqrt(sum / (n - 1)); // unbiased SD
-      for (unsigned long i = 0; i < n; i++)
+      for (unsigned long i = 0; i < n; i++) {
+        std::cerr << TAB << TAB << X[i * d + j] << "\n";
         X[i * d + j] = X[i * d + j] / sum;
+	  }
     }
   }
 }
+*/
 
 void compute_score (std::vector<double> &stat, unsigned long n, long d, unsigned long n_sample, std::vector<double> &score){
   score = std::vector < double > (stat.size(), 0);
-  normalize(stat, d, n);
+  //normalize(stat, d, n);
   if (n_sample != 0) {
     n_sample = std::min(n_sample,n);
   }
@@ -127,16 +160,27 @@ double compute_threshold (std::vector < double > &scores, size_t n_elements) {
 }
 
 void detect_outliers (Molecule_stats &molecule_stats, std::vector < double > &scores, std::vector < bool > &outliers, size_t n_elements, size_t nchrs) {
-  int d = 5;
+  unsigned long cpt = 0;
+  unsigned int d = 5;
+  std::vector < std::vector < double > > values_tmp (d, std::vector < double > (n_elements));
   std::vector < double > all_values (d * n_elements);
-  size_t cpt = 0;
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     for (size_t i = 0; i < molecule_stats[chrid].size(); ++i) {
-      all_values[cpt++] = molecule_stats[chrid][i].coverage;
-      all_values[cpt++] = molecule_stats[chrid][i].length;
-      all_values[cpt++] = molecule_stats[chrid][i].read_density;
-      all_values[cpt++] = molecule_stats[chrid][i].start;
-      all_values[cpt++] = molecule_stats[chrid][i].end;
+      values_tmp[0][cpt] = molecule_stats[chrid][i].coverage;
+      values_tmp[1][cpt] = molecule_stats[chrid][i].length;
+      values_tmp[2][cpt] = molecule_stats[chrid][i].read_density;
+      values_tmp[3][cpt] = molecule_stats[chrid][i].start;
+      values_tmp[4][cpt] = molecule_stats[chrid][i].end;
+	  ++cpt;
+    }
+  }
+  for (auto &X: values_tmp) {
+    normalize(X, n_elements);
+  }
+  cpt = 0;
+  for (unsigned int i = 0; i < n_elements; ++i) {
+    for (unsigned int j = 0; j < d; ++j) {
+      all_values[cpt++] = values_tmp[j][i];
     }
   }
   assert(cpt == d * n_elements);
