@@ -151,7 +151,7 @@ double compute_threshold (std::vector < double > &scores, size_t n_elements) {
   if (threshold != 0.0) {
     return threshold;
   }
-  std::vector < double > &sorted_scores = scores;
+  std::vector < double > sorted_scores = scores;
   std::sort(sorted_scores.begin(), sorted_scores.end());
   double q1 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.25))];
   double q3 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.75))];
