@@ -45,6 +45,7 @@ void sampling (unsigned long n_sample, unsigned long max, std::vector < unsigned
 // sample set, sid: sample indexes, ns: # of samples
 // output -> result: an array of qsps
 void qsp(std::vector < double > &X, unsigned long n, int d, unsigned long n_sample, std::vector < double > &score) {
+  assert(score.size() == n);
   std::vector < unsigned long > id_sample (n_sample, 0);
   sampling(n_sample, n, id_sample);
   // compute the outlierness score qsp for each data point
@@ -135,7 +136,7 @@ void normalize(std::vector < double > &X, unsigned long n, int d) {
 */
 
 void compute_score (std::vector<double> &stat, unsigned long n, long d, unsigned long n_sample, std::vector<double> &score){
-  score = std::vector < double > (stat.size(), 0);
+  score = std::vector < double > (n, 0);
   //normalize(stat, d, n);
   if (n_sample != 0) {
     n_sample = std::min(n_sample,n);
@@ -151,7 +152,8 @@ double compute_threshold (std::vector < double > &scores, size_t n_elements) {
   if (threshold != 0.0) {
     return threshold;
   }
-  std::vector < double > &sorted_scores = scores;
+  assert(scores.size() == n_elements);
+  std::vector < double > sorted_scores = scores;
   std::sort(sorted_scores.begin(), sorted_scores.end());
   double q1 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.25))];
   double q3 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.75))];
@@ -188,7 +190,7 @@ void detect_outliers (Molecule_stats &molecule_stats, std::vector < double > &sc
   double threshold = compute_threshold(scores, n_elements);
   std::cerr << TAB << TAB << "Using a threshold of " << threshold << "\n";
   for (size_t i = 0; i < n_elements; ++i) {
-    outliers[i] = (scores[i] <= threshold);
+    outliers[i] = (scores[i] > threshold);
   }
 }
 

@@ -101,7 +101,7 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
                            Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'E' <<
                            n_inter << "\n";
 	  }
-      if (edge_id % 1000 == 0) std::cerr << TAB << TAB << "Inspecting edge " << edge_id << "/" << total_n_edges << "\r" << std::flush;
+      if (edge_id % 100000 == 0) std::cerr << TAB << TAB << "Inspecting edge " << edge_id << "/" << total_n_edges << "\r" << std::flush;
       ++edge_id;
     }
   }

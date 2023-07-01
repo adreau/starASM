@@ -22,7 +22,7 @@ struct Read {
   }
 };
 
-inline bool operator< (const Read& lhs, const Read& rhs) {
+inline bool operator< (const Read &lhs, const Read &rhs) {
   if (lhs.chrid < rhs.chrid) {
     return true;
   }
