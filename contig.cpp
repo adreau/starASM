@@ -14,9 +14,9 @@ unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::
   set_intersection(b1.begin(), b1.end(),
           b2.begin(), b2.end(),
           std::back_inserter(common_barcodes));
-  size_t s1 = b1.size();
-  size_t s2 = b2.size();
-  size_t sc = common_barcodes.size();
+  double s1 = b1.size();
+  double s2 = b2.size();
+  double sc = common_barcodes.size();
   if (sc == 0) return 0;
   switch (Globals::condition) {
       case 1:

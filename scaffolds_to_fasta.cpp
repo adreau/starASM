@@ -61,10 +61,10 @@ void scaffolds_to_fasta (RefIntervalsSet &refIntervalsSet) {
     }
     write_fasta_sequence(n_scaffolds + 1, sequence, output_file);
     sequence.clear();
-    if (n_scaffolds % 100 == 0) {
-      std::cerr << TAB << n_scaffolds << "/" << refIntervalsSet.size() << " scaffolds\r" << std::flush;
+    if (n_scaffolds % 1000 == 0) {
+      std::cerr << TAB << n_scaffolds << "/" << refIntervalsSet.size() << " scaffolds written\r" << std::flush;
     }
   }
   output_file.close();
-  std::cerr << TAB << refIntervalsSet.size() << "/" << refIntervalsSet.size() << " scaffolds\n";
+  std::cerr << TAB << refIntervalsSet.size() << "/" << refIntervalsSet.size() << " scaffolds written.\n";
 }

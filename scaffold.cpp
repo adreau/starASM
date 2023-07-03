@@ -64,6 +64,8 @@ void scaffolds_to_intervals (Scaffolds &scaffolds, Contigs &contigs, RefInterval
         refIntervals.emplace_back(Globals::chrs[scaffold_part.nodeId.contigId], scaffold_part.is_forward, contig_part.start, contig_part.end);
       }
     }
-    refIntervalsSet.push_back(refIntervals);
+	if (! refIntervals.empty()) {
+      refIntervalsSet.push_back(refIntervals);
+	}
   }
 }

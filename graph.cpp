@@ -26,8 +26,8 @@ void create_cis_arcs (Contigs &contigs, Graph &graph) {
     Node &nextNode = graph.nodes[nodeId];
     if (prevNode.contigId == nextNode.contigId) {
       ++n_possible_edges;
-      ContigPart prevContigPart = get_contig_part(contigs, prevNode);
-      ContigPart nextContigPart = get_contig_part(contigs, nextNode);
+      ContigPart &prevContigPart = get_contig_part(contigs, prevNode);
+      ContigPart &nextContigPart = get_contig_part(contigs, nextNode);
 	  unsigned int n_inter      = intersectMoleculesSize(prevContigPart.all_barcodes, nextContigPart.all_barcodes);
       if (n_inter >= Globals::min_n_reads) {
         graph.add_edge(nodeId - 1, nodeId, Link_types::EB);
@@ -67,9 +67,9 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
         ++n_edges;
       }
 	  if (! Globals::trans_link_file_name.empty()) {
-        trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'B' <<
-                           Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'B' <<
-                           n_inter << "\n";
+        trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'B' << TAB <<
+                           Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'B' << TAB <<
+                           contigPart1.barcodes_beg.size() << TAB << contigPart2.barcodes_beg.size() << TAB << n_inter << "\n";
 	  }
       n_inter = intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_end);;
       if (n_inter >= Globals::min_n_reads) {
@@ -77,9 +77,9 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
         ++n_edges;
       }
 	  if (! Globals::trans_link_file_name.empty()) {
-        trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'B' <<
-                           Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'E' <<
-                           n_inter << "\n";
+        trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'B' << TAB <<
+                           Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'E' << TAB <<
+                           contigPart1.barcodes_beg.size() << TAB << contigPart2.barcodes_end.size() << TAB << n_inter << "\n";
 	  }
 	  n_inter = intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_beg);
       if (n_inter >= Globals::min_n_reads) {
@@ -87,9 +87,9 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
         ++n_edges;
       }
 	  if (! Globals::trans_link_file_name.empty()) {
-        trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'E' <<
-                           Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'B' <<
-                           n_inter << "\n";
+        trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'E' << TAB <<
+                           Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'B' << TAB <<
+                           contigPart1.barcodes_end.size() << TAB << contigPart2.barcodes_beg.size() << TAB << n_inter << "\n";
 	  }
       n_inter = intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_end);
       if (n_inter >= Globals::min_n_reads) {
@@ -97,11 +97,11 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
         ++n_edges;
       }
 	  if (! Globals::trans_link_file_name.empty()) {
-        trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'E' <<
-                           Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'E' <<
-                           n_inter << "\n";
+        trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'E' << TAB <<
+                           Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'E' << TAB <<
+                           contigPart1.barcodes_end.size() << TAB << contigPart2.barcodes_end.size() << TAB << n_inter << "\n";
 	  }
-      if (edge_id % 100000 == 0) std::cerr << TAB << TAB << "Inspecting edge " << edge_id << "/" << total_n_edges << "\r" << std::flush;
+      if (edge_id % 1000000 == 0) std::cerr << TAB << TAB << "Inspecting edge " << edge_id << "/" << total_n_edges << "\r" << std::flush;
       ++edge_id;
     }
   }
@@ -120,7 +120,7 @@ void get_node_name (Contigs &contigs, Graph &graph, size_t nodeId, std::string &
   Node       &node       = graph.nodes[nodeId];
   Contig     &contig     = contigs[node.contigId];
   ContigPart &contigPart = contig.contigParts[node.contigPartId];
-  name = Globals::chrs[node.contigId] + "_" + std::to_string(contigPart.start) + "_" + std::to_string(contigPart.end);
+  name = Globals::chrs[node.contigId] + "_" + std::to_string(contigPart.start + 1) + "_" + std::to_string(contigPart.end);
 }
 
 
@@ -135,7 +135,7 @@ void write_graph (Contigs &contigs, Graph &graph) {
   for (unsigned int i = 0; i < contigs.size(); ++i) {
     Contig &contig = contigs[i];
     for (ContigPart &contigPart: contig.contigParts) {
-      graph_file << "S" << "\t" << Globals::chrs[i] << "_" << contigPart.start << "_" << contigPart.end << "\t*\tLN:i:" << contigPart.getSize() << "\n";
+      graph_file << "S" << "\t" << Globals::chrs[i] << "_" << (contigPart.start + 1) << "_" << contigPart.end << "\t*\tLN:i:" << contigPart.getSize() << "\n";
     }
   }
   for (size_t nodeId1 = 0; nodeId1 < graph.nodes.size(); ++nodeId1) {

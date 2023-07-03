@@ -75,6 +75,9 @@ void read_fasta () {
 void write_fasta_sequence (int id, std::string &sequence, std::ofstream &file) {
   file << ">scaff_" << id << "\n";
   for (size_t i = 0; i <= sequence.length() / LINE_LEN; ++i) {
-    file << sequence.substr(i * LINE_LEN, LINE_LEN) << "\n";
+    std::string s = sequence.substr(i * LINE_LEN, LINE_LEN);
+    if (! s.empty()) {
+      file << s << "\n";
+    }
   }
 }

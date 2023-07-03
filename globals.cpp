@@ -16,7 +16,7 @@ unsigned int  Globals::min_n_reads_barcode    {                  2 };
 std::string   Globals::output_molecules_file_name;
 std::string   Globals::output_split_file_name;
 unsigned long Globals::seed                   {                  0 };
-float         Globals::threshold              {               0.01 };
+float         Globals::threshold              {                0.0 };
 unsigned long Globals::window                 {              10000 };
 std::string   Globals::counts_file_name;
 std::string   Globals::scores_file_name;

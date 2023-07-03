@@ -18,7 +18,7 @@ struct Interval {
   }
 
   unsigned long int get_overlap (Interval &i) {
-    int overlap = std::max(end, i.end) - std::min(start, i.start);
+    int overlap = std::min(end, i.end) - std::max(start, i.start);
     if (overlap >= 0) return overlap;
     return 0;
   }

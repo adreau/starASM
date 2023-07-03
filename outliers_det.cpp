@@ -162,8 +162,9 @@ double compute_threshold (std::vector < double > &scores, size_t n_elements) {
 }
 
 void detect_outliers (Molecule_stats &molecule_stats, std::vector < double > &scores, std::vector < bool > &outliers, size_t n_elements, size_t nchrs) {
-  unsigned long cpt = 0;
-  unsigned int d = 5;
+  unsigned int  n_outliers = 0;
+  unsigned long cpt        = 0;
+  unsigned int  d          = 5;
   std::vector < std::vector < double > > values_tmp (d, std::vector < double > (n_elements));
   std::vector < double > all_values (d * n_elements);
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
@@ -188,10 +189,57 @@ void detect_outliers (Molecule_stats &molecule_stats, std::vector < double > &sc
   assert(cpt == d * n_elements);
   compute_score(all_values, n_elements, d, Globals::n_sample, scores);
   double threshold = compute_threshold(scores, n_elements);
-  std::cerr << TAB << TAB << "Using a threshold of " << threshold << "\n";
   for (size_t i = 0; i < n_elements; ++i) {
-    outliers[i] = (scores[i] > threshold);
+	// This supposes that outliers are originally set to false
+    if (scores[i] > threshold) {
+      outliers[i] = true;
+      ++n_outliers;
+	}
   }
+  std::cerr << TAB << TAB << "Using a threshold of " << threshold << ", " << n_outliers << "/" << n_elements << " outliers found.\n";
+}
+
+unsigned int remove_first_outliers (std::vector < bool > &outliers, unsigned long start, unsigned long end) {
+  unsigned int n_changed = 0;
+  for (unsigned long i = start; i < end; ++i) {
+    if (! outliers[i]) {
+      return n_changed;
+	}
+	outliers[i] = false;
+    ++n_changed;
+  }
+  return n_changed;
+}
+
+unsigned int remove_last_outliers (std::vector < bool > &outliers, unsigned long start, unsigned long end) {
+  unsigned int n_changed = 0;
+  for (unsigned long i = end - 1; i >= start; --i) {
+    if (! outliers[i]) {
+      return n_changed;
+	}
+	outliers[i] = false;
+    ++n_changed;
+	if (i == 0) {
+      return n_changed;
+	}
+  }
+  return n_changed;
+}
+
+// Counts at the ends of contigs are wrong.  Discard outliers there.
+void remove_end_outliers (Molecule_stats &molecule_stats, std::vector < bool > &outliers, size_t n_elements, size_t nchrs) {
+  unsigned long start = 0;
+  unsigned long end;
+  unsigned int n_changed = 0;
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    unsigned int npos = molecule_stats[chrid].size();
+	end = start + npos;
+	n_changed += remove_first_outliers(outliers, start, end);
+	n_changed += remove_last_outliers(outliers, start, end);
+	assert(end <= n_elements);
+	start = end;
+  }
+  std::cerr << TAB << "Reconsidering " << n_changed << " outliers that were located at the ends of the contigs.\n";
 }
 
 void split (Molecule_stats &molecule_stats, Contigs &contigs, std::vector < double > &scores, std::vector < bool > &outliers, size_t n_elements, size_t nchrs) {
@@ -272,7 +320,8 @@ void split_contigs (Molecule_stats &molecule_stats, Contigs &contigs) {
     n_elements += molecule_stats[chrid].size();
   }
   std::vector < double > scores (n_elements);
-  std::vector < bool > outliers (n_elements);
+  std::vector < bool > outliers (n_elements, false);
   detect_outliers(molecule_stats, scores, outliers, n_elements, nchrs);
+  remove_end_outliers(molecule_stats, outliers, n_elements, nchrs);
   split(molecule_stats, contigs, scores, outliers, n_elements, nchrs);
 }

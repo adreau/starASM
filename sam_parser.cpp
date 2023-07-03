@@ -19,6 +19,7 @@ bool is_duplicate (unsigned int flag) {
   return ((flag & BAM_FDUP) != 0);
 }
 
+/*
 // Return the match length
 unsigned int parse_cigar (std::string &cigar) {
   unsigned int match_len = 0;
@@ -96,8 +97,7 @@ bool parse_main_line (std::string &line, unsigned int &chrid, unsigned long &sta
     }
     else if (i >= 11) {
       if (starts_with(value, BARCODE_FLAG)) {
-        barcode = value.substr(6);
-        //barcode = value.substr(BARCODE_FLAG.size());
+        barcode = value.substr(BARCODE_FLAG_SIZE);
       }
     }
   }
@@ -110,6 +110,7 @@ bool parse_main_line (std::string &line, unsigned int &chrid, unsigned long &sta
   assert(mapq  != no_value);
   return true;
 }
+*/
 
 // Returns true iff:
 //  - read is mapped
@@ -138,6 +139,7 @@ bool filter_line (bam1_t *aln, kstring_t *kbarcode) {
 bool add_barcode_count (Barcodes &barcodes, bam1_t *aln, kstring_t *kbarcode) {
   if (filter_line(aln, kbarcode)) {
     std::string barcode (ks_str(kbarcode), ks_len(kbarcode));
+    barcode = barcode.substr(BARCODE_FLAG_SIZE);
     ++barcodes.count_map[barcode];
     return true;
   }
@@ -187,6 +189,7 @@ void add_barcode_line (Barcodes &barcodes, bam1_t *aln, kstring_t *kbarcode) {
   if (filter_line(aln, kbarcode)) {
     std::string barcode (ks_str(kbarcode), ks_len(kbarcode));
     std::string name (bam_get_qname(aln), aln->core.l_qname);
+    barcode = barcode.substr(BARCODE_FLAG_SIZE);
     add_barcode(barcodes, name, aln->core.tid, aln->core.pos, bam_endpos(aln), aln->core.qual, barcode);
     ks_clear(kbarcode);
   }
