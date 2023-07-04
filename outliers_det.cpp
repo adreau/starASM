@@ -147,18 +147,28 @@ void compute_score (std::vector<double> &stat, unsigned long n, long d, unsigned
   qsp(stat, n, d, n_sample, score);
 }
 
-double compute_threshold (std::vector < double > &scores, size_t n_elements) {
+double compute_threshold (Molecule_stats &molecule_stats, std::vector < double > &scores, size_t n_elements, size_t nchrs) {
   double threshold = Globals::threshold;
   if (threshold != 0.0) {
     return threshold;
   }
   assert(scores.size() == n_elements);
-  std::vector < double > sorted_scores = scores;
+  std::vector < double > sorted_scores;
+  sorted_scores.reserve(n_elements - 2 * nchrs);
+  // Copy scores, but remove contig ends
+  unsigned long i = 0;
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    for (size_t pos = 0; pos < molecule_stats[chrid].size(); ++pos, ++i) {
+      if ((pos > 0) && (pos < molecule_stats[chrid].size() - 1)) {
+        sorted_scores.push_back(scores[i]);
+	  }
+	}
+  }
   std::sort(sorted_scores.begin(), sorted_scores.end());
   double q1 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.25))];
   double q3 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.75))];
   double iqr = q3 - q1;
-  return q3 + 1.5 * iqr;
+  return q3 + 3 * iqr;
 }
 
 void detect_outliers (Molecule_stats &molecule_stats, std::vector < double > &scores, std::vector < bool > &outliers, size_t n_elements, size_t nchrs) {
@@ -188,7 +198,7 @@ void detect_outliers (Molecule_stats &molecule_stats, std::vector < double > &sc
   }
   assert(cpt == d * n_elements);
   compute_score(all_values, n_elements, d, Globals::n_sample, scores);
-  double threshold = compute_threshold(scores, n_elements);
+  double threshold = compute_threshold(molecule_stats, scores, n_elements, nchrs);
   for (size_t i = 0; i < n_elements; ++i) {
 	// This supposes that outliers are originally set to false
     if (scores[i] > threshold) {

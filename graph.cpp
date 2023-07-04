@@ -28,15 +28,17 @@ void create_cis_arcs (Contigs &contigs, Graph &graph) {
       ++n_possible_edges;
       ContigPart &prevContigPart = get_contig_part(contigs, prevNode);
       ContigPart &nextContigPart = get_contig_part(contigs, nextNode);
-	  unsigned int n_inter      = intersectMoleculesSize(prevContigPart.all_barcodes, nextContigPart.all_barcodes);
+	  unsigned int n_inter       = intersectMoleculesSize(prevContigPart.all_barcodes, nextContigPart.all_barcodes);
+	  bool         kept          = false;
       if (n_inter >= Globals::min_n_reads) {
         graph.add_edge(nodeId - 1, nodeId, Link_types::EB);
         ++n_edges;
+		kept = true;
       }
 	  if (! Globals::cis_link_file_name.empty()) {
         cis_link_file << Globals::chrs[prevNode.contigId] << TAB << prevContigPart.start << TAB << prevContigPart.end << TAB <<
                          Globals::chrs[nextNode.contigId] << TAB << nextContigPart.start << TAB << nextContigPart.end << TAB <<
-						 n_inter << "\n";
+						 prevContigPart.all_barcodes.size() << TAB << nextContigPart.all_barcodes.size() << TAB << n_inter << TAB << kept << "\n";
 	  }
       if (nodeId % 100 == 0) std::cerr << TAB << TAB << "Split contig " << nodeId << "/" << graph.nodes.size() << "\r" << std::flush;
     }
@@ -54,6 +56,7 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
   unsigned int edge_id       = 0;
   unsigned int n_edges       = 0;
   unsigned int total_n_edges = graph.nodes.size() * (graph.nodes.size() - 1) / 2;
+  bool         kept;
   for (size_t nodeId1 = 0; nodeId1 < graph.nodes.size(); ++nodeId1) {
     Node       &node1       = graph.nodes[nodeId1];
     ContigPart &contigPart1 = get_contig_part(contigs, node1);
@@ -62,44 +65,52 @@ void create_trans_arcs (Contigs &contigs, Graph &graph) {
       ContigPart &contigPart2 = get_contig_part(contigs, node2);
 	  unsigned int n_inter;
 	  n_inter = intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_beg);
+	  kept    = false;
       if (n_inter >= Globals::min_n_reads) {
         graph.add_edge(nodeId1, nodeId2, Link_types::BB);
         ++n_edges;
+		kept = true;
       }
 	  if (! Globals::trans_link_file_name.empty()) {
         trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'B' << TAB <<
                            Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'B' << TAB <<
-                           contigPart1.barcodes_beg.size() << TAB << contigPart2.barcodes_beg.size() << TAB << n_inter << "\n";
+                           contigPart1.barcodes_beg.size() << TAB << contigPart2.barcodes_beg.size() << TAB << n_inter << TAB << kept << "\n";
 	  }
       n_inter = intersectMoleculesSize(contigPart1.barcodes_beg, contigPart2.barcodes_end);;
+	  kept    = false;
       if (n_inter >= Globals::min_n_reads) {
         graph.add_edge(nodeId1, nodeId2, Link_types::BE);
         ++n_edges;
+		kept = true;
       }
 	  if (! Globals::trans_link_file_name.empty()) {
         trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'B' << TAB <<
                            Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'E' << TAB <<
-                           contigPart1.barcodes_beg.size() << TAB << contigPart2.barcodes_end.size() << TAB << n_inter << "\n";
+                           contigPart1.barcodes_beg.size() << TAB << contigPart2.barcodes_end.size() << TAB << n_inter << TAB << kept << "\n";
 	  }
 	  n_inter = intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_beg);
+	  kept    = false;
       if (n_inter >= Globals::min_n_reads) {
         graph.add_edge(nodeId1, nodeId2, Link_types::EB);
         ++n_edges;
+		kept = true;
       }
 	  if (! Globals::trans_link_file_name.empty()) {
         trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'E' << TAB <<
                            Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'B' << TAB <<
-                           contigPart1.barcodes_end.size() << TAB << contigPart2.barcodes_beg.size() << TAB << n_inter << "\n";
+                           contigPart1.barcodes_end.size() << TAB << contigPart2.barcodes_beg.size() << TAB << n_inter << TAB << kept << "\n";
 	  }
       n_inter = intersectMoleculesSize(contigPart1.barcodes_end, contigPart2.barcodes_end);
+	  kept    = false;
       if (n_inter >= Globals::min_n_reads) {
         graph.add_edge(nodeId1, nodeId2, Link_types::EE);
         ++n_edges;
+		kept = true;
       }
 	  if (! Globals::trans_link_file_name.empty()) {
         trans_link_file << Globals::chrs[node1.contigId] << TAB << contigPart1.start << TAB << contigPart1.end << TAB << 'E' << TAB <<
                            Globals::chrs[node2.contigId] << TAB << contigPart2.start << TAB << contigPart2.end << TAB << 'E' << TAB <<
-                           contigPart1.barcodes_end.size() << TAB << contigPart2.barcodes_end.size() << TAB << n_inter << "\n";
+                           contigPart1.barcodes_end.size() << TAB << contigPart2.barcodes_end.size() << TAB << n_inter << TAB << kept << "\n";
 	  }
       if (edge_id % 1000000 == 0) std::cerr << TAB << TAB << "Inspecting edge " << edge_id << "/" << total_n_edges << "\r" << std::flush;
       ++edge_id;
