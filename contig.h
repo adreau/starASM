@@ -67,7 +67,7 @@ struct Contig {
 using Contigs = std::vector < Contig >;
 
 void add_molecules_to_contigs_extremites (Molecules &molecules, Contigs &contigs);
-unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2);
+void intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2, unsigned int &n_inter, double &jaccard);
 Contig &get_contig (Contigs &contigs, NodeId &nodeId);
 ContigPart &get_contig_part (Contigs &contigs, NodeId &nodeId);
 

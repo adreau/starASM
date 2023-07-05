@@ -7,46 +7,17 @@
 #include "contig.h"
 
 
-// Count the number of common barcodes between to sets
-unsigned int intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2){
-
-  std::vector < unsigned long int > common_barcodes;
-  set_intersection(b1.begin(), b1.end(),
-          b2.begin(), b2.end(),
-          std::back_inserter(common_barcodes));
-  double s1 = b1.size();
-  double s2 = b2.size();
-  double sc = common_barcodes.size();
-  if (sc == 0) return 0;
-  switch (Globals::condition) {
-      case 1:
-          if ((sc >= s1 * 0.8) && (sc >= s2 * 0.8)) return sc;
-          return 0;
-      case 2:
-          if ((sc >= s1 * 0.8) || (sc >= s2 * 0.8)) return sc;
-          return 0;
-      case 3:
-          if ((sc >= s1 * 0.6) && (sc >= s2 * 0.6)) return sc;
-          return 0;
-      case 4:
-          if ((sc >= s1 * 0.6) || (sc >= s2 * 0.6)) return sc;
-          return 0;
-      case 5:
-          if ((sc >= s1 * 0.4) && (sc >= s2 * 0.4)) return sc;
-          return 0;
-      case 6:
-          if ((sc >= s1 * 0.4) || (sc >= s2 * 0.4)) return sc;
-          return 0;
-      case 7:
-          if ((sc >= s1 * 0.2) && (sc >= s2 * 0.2)) return sc;
-          return 0;
-      case 8:
-          if ((sc >= s1 * 0.2) || (sc >= s2 * 0.2)) return sc;
-          return 0;
-  }
-  std::cerr << "Error: arc condition should be between 1 and 8.\n";
-  exit(EXIT_FAILURE);
-  return 0;
+// Compute the Jaccard index between two sets of barcodes
+void intersectMoleculesSize(std::vector < unsigned long int > &b1, std::vector < unsigned long int > &b2, unsigned int &n_inter, double &jaccard){
+  std::vector < unsigned long int > intersection_barcodes;
+  std::vector < unsigned long int > union_barcodes;
+  set_intersection(b1.begin(), b1.end(), b2.begin(), b2.end(), std::back_inserter(intersection_barcodes));
+  set_union(b1.begin(), b1.end(), b2.begin(), b2.end(), std::back_inserter(union_barcodes));
+  unsigned int n_union = union_barcodes.size();
+  n_inter              = intersection_barcodes.size();
+  jaccard              = 0.0;
+  if (n_union == 0) return;
+  jaccard = static_cast < double > (n_inter) / n_union;
 }
 
 // Find the number of common barcodes between contig ends

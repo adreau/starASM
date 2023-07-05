@@ -29,7 +29,7 @@ int           Globals::min_ctg_size           {              20000 };
 unsigned long Globals::min_overlap            {                300 };
 float         Globals::beginning_ratio        {                0.4 };
 unsigned long Globals::max_contig_distance    {              20000 };
-int           Globals::condition              {                  1 };
+float         Globals::jaccard                {                0.5 };
 unsigned int  Globals::min_n_reads            {                  3 };
 std::string   Globals::input_split_file_name;
 std::string   Globals::graph_file_name;

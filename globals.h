@@ -46,7 +46,7 @@ struct Globals {
   static unsigned long min_overlap;
   static float         beginning_ratio;
   static unsigned long max_contig_distance;
-  static int           condition;
+  static float         jaccard;
   static unsigned int  min_n_reads;
   static std::string   input_split_file_name;
   static std::string   graph_file_name;

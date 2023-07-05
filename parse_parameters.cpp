@@ -43,7 +43,7 @@ void show_usage(char *name) {
     << "  * Output\n"
     << "    -o, --output          FILE   Output scaffold file in FASTA format\n"
     << "  * Other parameters\n"
-    << "    -c, --arcsCondition   INT    Condition used for connecting two contigs; values{1..8} (default: "           << Globals::condition                  << ", lower is more strict) \n"
+    << "    -c, --jaccard         FLOAT  Jaccard index used for connecting two contigs (default: "                     << Globals::jaccard                    << ", higher is more strict) \n"
     << "    -r, --nReads          INT    Min number of common barcodes to get a links (default: "                      << Globals::min_n_reads                << ")\n"
     << "    -R, --begRatio        FLOAT  Ratio of the contig size that is considered as the beginning part (default: " << Globals::beginning_ratio            << ", should be less than 0.5)\n"
     << "    -v, --minOverlap      INT    Minimum overlap between a molecule and a contig (default: "                   << Globals::min_overlap                << ")\n"
@@ -102,8 +102,8 @@ void parse_parameters (int argc, char* argv[]) {
       Globals::input_split_file_name = argv[++i];
     } else if ((arg == "-o") || (arg == "--output")){
       Globals::output_file_name = argv[++i];
-    } else if ((arg == "-c") || (arg == "--arcsCondition")){
-      Globals::condition = std::stoi(argv[++i]);
+    } else if ((arg == "-c") || (arg == "--jaccard")){
+      Globals::jaccard = std::stof(argv[++i]);
     } else if ((arg == "-r") || (arg == "--nReads")){
       Globals::min_n_reads = std::stoi(argv[++i]);
     } else if ((arg == "-R") || (arg == "--begRatio")){
