@@ -168,7 +168,7 @@ double compute_threshold (Molecule_stats &molecule_stats, std::vector < double >
   double q1 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.25))];
   double q3 = sorted_scores[static_cast < unsigned long > (round(static_cast < double > (n_elements) * 0.75))];
   double iqr = q3 - q1;
-  return q3 + 3 * iqr;
+  return q3 + 10 * iqr;
 }
 
 void detect_outliers (Molecule_stats &molecule_stats, std::vector < double > &scores, std::vector < bool > &outliers, size_t n_elements, size_t nchrs) {

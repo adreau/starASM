@@ -37,7 +37,7 @@ struct Interval {
   }
 
   bool is_set () {
-    return (start != 0);
+    return (end != 0);
   }
 
   friend std::ostream &operator<< (std::ostream &out, Interval &e);

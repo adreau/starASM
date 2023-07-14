@@ -36,14 +36,14 @@ void extract_subsequence (RefInterval &refInterval, std::string &gap, std::strin
     exit(EXIT_FAILURE);
   }
   // C++ is 0-based
-  contig = contig.substr(refInterval.start - 1, refInterval.end - refInterval.start + 1);
+  contig = contig.substr(refInterval.start, refInterval.end - refInterval.start + 1);
   if (! refInterval.strand) {
     complement(contig);
   }
   output.append(contig);
 }
 
-void scaffolds_to_fasta (RefIntervalsSet &refIntervalsSet) {
+void intervals_to_fasta (RefIntervalsSet &refIntervalsSet) {
   std::cerr << "Writing scaffolds...\n";
   std::string gap(Globals::filler_size, 'N');
   std::string sequence;

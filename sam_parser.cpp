@@ -19,99 +19,6 @@ bool is_duplicate (unsigned int flag) {
   return ((flag & BAM_FDUP) != 0);
 }
 
-/*
-// Return the match length
-unsigned int parse_cigar (std::string &cigar) {
-  unsigned int match_len = 0;
-  unsigned int number = 0;
-  for (char c: cigar) {
-    switch (c) {
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-        number = number * 10 + (c - '0');
-        break;
-      case 'M':
-      case 'X':
-      case '=':
-      case 'D':
-        match_len += number;
-        number = 0;
-        break;
-      case 'I':
-      case 'S':
-      case 'P':
-      case 'H':
-        number = 0;
-        break;
-      default:
-        assert(false);
-    }
-  }
-  return match_len;
-}
-
-// Returns true iff:
-//  - read is mapped
-//  - flagged in proper pair
-//  - mapq is higher than threshold
-//  - barcode in BX tag is set
-bool parse_main_line (std::string &line, unsigned int &chrid, unsigned long &start, unsigned long &end, unsigned int &mapq, std::string &barcode) {
-  std::stringstream split_line(line);
-  std::string value;
-  const unsigned int no_value = -1;
-  unsigned int flag = no_value;
-  for (unsigned int i = 0; split_line >> value; ++i) {
-    if (i == 1) {
-      flag = std::stoi(value);
-      if ((! is_mapped(flag)) || (is_duplicate(flag))) {
-        return false;
-      }
-    }
-    else if (i == 2) {
-      if (value == "*") {
-        return false;
-      }
-      assert(Globals::chrids.find(value) != Globals::chrids.end());
-      chrid = Globals::chrids[value];
-    }
-    else if (i == 3) {
-      start = std::stoul(value) - 1;
-    }
-    else if (i == 4) {
-      mapq = std::stoi(value);
-      if (mapq < Globals::min_mapq) {
-        return false;
-      }
-    }
-    else if (i == 5) {
-    //hts_pos_t bam_endpos(const bam1_t *b);
-      end = start + parse_cigar(value);
-    }
-    else if (i >= 11) {
-      if (starts_with(value, BARCODE_FLAG)) {
-        barcode = value.substr(BARCODE_FLAG_SIZE);
-      }
-    }
-  }
-  if (barcode.empty()) {
-    return false;
-  }
-  assert(chrid != no_value);
-  assert(start != no_value);
-  assert(end   != no_value);
-  assert(mapq  != no_value);
-  return true;
-}
-*/
-
 // Returns true iff:
 //  - read is mapped
 //  - flagged in proper pair
@@ -188,7 +95,8 @@ void add_barcode (Barcodes &barcodes, const std::string &name, unsigned int chri
 void add_barcode_line (Barcodes &barcodes, bam1_t *aln, kstring_t *kbarcode) {
   if (filter_line(aln, kbarcode)) {
     std::string barcode (ks_str(kbarcode), ks_len(kbarcode));
-    std::string name (bam_get_qname(aln), aln->core.l_qname);
+	// Read name is null-terminated in the BAM file, should not rely on size.
+    std::string name (bam_get_qname(aln));
     barcode = barcode.substr(BARCODE_FLAG_SIZE);
     add_barcode(barcodes, name, aln->core.tid, aln->core.pos, bam_endpos(aln), aln->core.qual, barcode);
     ks_clear(kbarcode);

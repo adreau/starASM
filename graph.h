@@ -12,9 +12,9 @@ struct Graph {
     nodes.emplace_back(contigId, contigPartId);
   }
 
-  void add_edge (size_t nodeId1, size_t nodeId2, Link_types link_type) {
-    nodes[nodeId1].edges.emplace_back(nodeId2, link_type);
-    nodes[nodeId2].edges.emplace_back(nodeId1, reverse_link_type[link_type]);
+  void add_edge (size_t nodeId1, size_t nodeId2, Link_types link_type, double jaccard, unsigned int n_reads, unsigned int n_min, unsigned int n_max) {
+    nodes[nodeId1].edges.emplace_back(nodeId2, link_type, jaccard, n_reads, n_min, n_max);
+    nodes[nodeId2].edges.emplace_back(nodeId1, reverse_link_type[link_type], jaccard, n_reads, n_min, n_max);
   }
 
   // Each edge is repeated: if there is an edge from node1 to node2, there should be an edge from node2 to node1

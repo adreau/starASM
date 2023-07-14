@@ -18,9 +18,9 @@ void join (Molecules &molecules, Contigs &contigs) {
   find_scaffolds(graph, scaffolds);
   RefIntervalsSet refIntervalsSet;
   scaffolds_to_intervals(scaffolds, contigs, refIntervalsSet);
-  merge_close_contigs(refIntervalsSet);
+  //merge_close_contigs(refIntervalsSet);
   if (! Globals::scaffold_file_name.empty()) {
     print_scaffold(refIntervalsSet);
   }
-  scaffolds_to_fasta(refIntervalsSet);
+  intervals_to_fasta(refIntervalsSet);
 }

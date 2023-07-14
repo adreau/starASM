@@ -6,10 +6,14 @@
 
 // An edge points to a node id (a contig part), and describes how the contig parts are connected
 struct Edge {
-  size_t     nodeId;
-  Link_types link_type;
+  size_t       nodeId;
+  Link_types   link_type;
+  double       jaccard;
+  unsigned int n_reads;
+  unsigned int n_min;
+  unsigned int n_max;
 
-  Edge (size_t n, Link_types l): nodeId(n), link_type(l) {}
+  Edge (size_t n, Link_types l, double j, unsigned int r, unsigned int i, unsigned a): nodeId(n), link_type(l), jaccard(j), n_reads(r), n_min(i), n_max(a) {}
 
   void unset () {
     nodeId = unset_value;

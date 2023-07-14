@@ -1,6 +1,7 @@
 #include <unordered_set>
 #include <sstream>
 #include <fstream>
+#include <cassert>
 
 #include "constants.h"
 #include "globals.h"
@@ -97,9 +98,12 @@ void add_molecules_to_contigs_extremites (Molecules &molecules, Contigs &contigs
 
 
 Contig &get_contig (Contigs &contigs, NodeId &nodeId) {
+  assert(nodeId.contigId < contigs.size());
   return contigs[nodeId.contigId];
 }
 
 ContigPart &get_contig_part (Contigs &contigs, NodeId &nodeId) {
+  assert(nodeId.contigId < contigs.size());
+  assert(nodeId.contigPartId < contigs[nodeId.contigId].contigParts.size());
   return contigs[nodeId.contigId].contigParts[nodeId.contigPartId];
 }

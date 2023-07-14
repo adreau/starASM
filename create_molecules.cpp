@@ -14,45 +14,6 @@
 #include "create_molecules.h"
 
 
-
-/*
-unsigned int count_n_names (std::vector < unsigned long > &names) {
-  std::sort(names.begin(), names.end());
-  auto last = std::unique(names.begin(), names.end());
-  return std::distance(names.begin(), last);
-}
-
-unsigned int count_n_reads (std::vector < std::vector < Read > > &reads) {
-  std::vector < unsigned long > names;
-  for (auto &r1: reads) {
-    for (auto &r2: r1) {
-      names.push_back(r2.name);
-    }
-  }
-  return count_n_names(names);
-}
-
-void trim_barcodes (Barcodes &barcodes) {
-  std::cerr << TAB << "Removing outlier barcodes...\n";
-  auto it = barcodes.begin();
-  while (it != barcodes.end()) {
-    if (count_n_reads(it->second) < Globals::min_n_reads_barcode) it = barcodes.erase(it);
-    else                                                        ++it;
-  }
-}
-
-void sort_barcodes (Barcodes &barcodes) {
-  std::cerr << TAB << "Sorting " << barcodes.size() << " barcodes...\n";
-  for (auto &p: barcodes) {
-    p.second.shrink_to_fit();
-    for (auto &q: p.second) {
-      q.shrink_to_fit();
-      std::sort(q.begin(), q.end());
-    }
-  }
-}
-*/
-
 // Returns the index of the last read of the current split.
 //   A split is made iff the distance between consecutive reads is greater than max_read_distance
 unsigned int find_first_split (Barcodes &barcodes, unsigned int start_id, unsigned int end_id) {
@@ -130,8 +91,8 @@ unsigned long find_chr_end (Barcodes &barcodes, unsigned int chrid, unsigned lon
 }
 
 void join_to_molecules (Barcodes &barcodes, Molecules &molecules) {
-  unsigned long i = 0;
   for (auto &it: barcodes.ids) {
+    unsigned long i = it.second;
     if (barcodes.counts[i] > 0) {
       unsigned long start = barcodes.offsets[i];
       unsigned long end   = barcodes.offsets[i] + barcodes.counts[i];
@@ -143,7 +104,6 @@ void join_to_molecules (Barcodes &barcodes, Molecules &molecules) {
       }
       while (start < end);
     }
-    ++i;
   }
 }
 
