@@ -10,10 +10,11 @@ void join (Molecules &molecules, Contigs &contigs) {
   Graph graph;
   create_nodes(contigs, graph);
   create_arcs(contigs, graph);
+  remove_bifurcations(graph);
+  remove_outlier_edges(graph);
   if (! Globals::graph_file_name.empty()) {
     write_graph(contigs, graph);
   }
-  remove_bifurcations(graph);
   Scaffolds scaffolds;
   find_scaffolds(graph, scaffolds);
   RefIntervalsSet refIntervalsSet;

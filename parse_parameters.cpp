@@ -37,7 +37,7 @@ void show_usage(char *name) {
     << "======= Join ASM step ========\n"
     << "  * Inputs\n"
     << "    -f, --contigs         FILE   Input contigs in FASTA format\n"
-    << "    -M, --inputMolecule   FILE   Input molecule file (output of previous step)\n"
+    << "    -M, --inputMolecule   FILE   Input molecule file (output of first step)\n"
     << "    -S, --inputSplit      FILE   Input split file in BED format (output of previous step)\n"
     << "    -w, --window          INT    Window size for barcode consideration (default: "                             << Globals::window                     << ")\n"
     << "  * Output\n"
@@ -55,6 +55,21 @@ void show_usage(char *name) {
     << "    -p, --mapping         FILE   Output where the molecule map with respect to the contigs\n"
     << "    -C, --cisLinks        FILE   Output links between previous split contig parts\n"
     << "    -T, --transLinks      FILE   Output links between different contig parts\n";
+}
+
+void check_parameters () {
+  if (Globals::contigs_file_name.empty()) {
+    std::cerr << "Error!  Contig file is missing.\nExiting.\n";
+    exit(EXIT_FAILURE);
+  }
+  if (Globals::output_file_name.empty()) {
+    std::cerr << "Error!  Output file is missing.\nExiting.\n";
+    exit(EXIT_FAILURE);
+  }
+  if (Globals::input_file_name.empty() && Globals::input_molecules_file_name.empty() && Globals::input_split_file_name.empty()) {
+    std::cerr << "Error!  Input file is missing: requiring either BAM, or molecule, or split file.\nExiting.\n";
+    exit(EXIT_FAILURE);
+  }
 }
 
 
@@ -129,4 +144,5 @@ void parse_parameters (int argc, char* argv[]) {
       exit(EXIT_FAILURE);
     }
   }
+  check_parameters();
 }

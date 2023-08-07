@@ -37,5 +37,6 @@ void create_nodes (Contigs &contigs, Graph &graph);
 void create_arcs (Contigs &contigs, Graph &graph);
 void write_graph (Contigs &contigs, Graph &graph);
 void remove_bifurcations (Graph &graph);
+void remove_outlier_edges (Graph &graph);
 
 #endif

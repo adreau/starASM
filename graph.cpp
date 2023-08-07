@@ -1,5 +1,6 @@
 #include <cassert>
 #include <fstream>
+#include <cmath> // log, exp
 
 #include "constants.h"
 #include "globals.h"
@@ -198,20 +199,26 @@ void write_graph (Contigs &contigs, Graph &graph) {
         size_t nodeId2 = edge.nodeId;
         if (nodeId1 < nodeId2) {
           get_node_name(contigs, graph, nodeId2, ctg2);
+		  char s1 = '+', s2 = '+';
           switch (edge.link_type) {
             case Link_types::BB:
-              graph_file << "L\t" << ctg2 << "\t-\t" << ctg1 << "\t+\t*\tJA:f:" << edge.jaccard << " RC:i:" << edge.n_reads << " NI:i:" << edge.n_min << " NA:i:" << edge.n_max << "\n";
+			  s1 = '-';
+			  s2 = '+';
               break;
             case Link_types::BE:
-              graph_file << "L\t" << ctg2 << "\t+\t" << ctg1 << "\t+\t*\tJA:f:" << edge.jaccard << " RC:i:" << edge.n_reads << " NI:i:" << edge.n_min << " NA:i:" << edge.n_max << "\n";
+			  s1 = '-';
+			  s2 = '-';
               break;
             case Link_types::EB:
-              graph_file << "L\t" << ctg1 << "\t+\t" << ctg2 << "\t+\t*\tJA:f:" << edge.jaccard << " RC:i:" << edge.n_reads << " NI:i:" << edge.n_min << " NA:i:" << edge.n_max << "\n";
+			  s1 = '+';
+			  s2 = '+';
               break;
             case Link_types::EE:
-              graph_file << "L\t" << ctg1 << "\t+\t" << ctg2 << "\t-\t*\tJA:f:" << edge.jaccard << " RC:i:" << edge.n_reads << " NI:i:" << edge.n_min << " NA:i:" << edge.n_max << "\n";
+			  s1 = '+';
+			  s2 = '-';
               break;
           }
+          graph_file << "L\t" << ctg1 << "\t" << s1 << "\t" << ctg2 << "\t" << s2 << "\t*\tJA:f:" << edge.jaccard << " RC:i:" << edge.n_reads << " NI:i:" << edge.n_min << " NA:i:" << edge.n_max << " ST:i:" << (edge.is_set()? 1: 0) << "\n";
         }
       }
     }
@@ -268,4 +275,59 @@ void remove_bifurcations (Graph &graph) {
     }
   }
   std::cerr << TAB << "Removed " << n_removed << "/" << (2 * n_nodes) << " bifurcations\n";
+}
+
+double compute_mean (std::vector < double > &distribution) {
+  double sum = 0.0;
+  for (double c: distribution) {
+    sum += c;
+  }
+  return sum / distribution.size();
+}
+
+double compute_std_dev (std::vector < double > &distribution, double mean) {
+  double accum = 0.0;
+  for (double c: distribution) {
+    accum += (c - mean) * (c - mean);
+  }
+  return std::sqrt(accum / (distribution.size() - 1));
+}
+
+
+// Remove arcs when the number of reads lies outside the expected distribution
+// Arcs are actually not removed, but replaced by -1
+void remove_outlier_edges (Graph &graph) {
+  unsigned int n_removed = 0;
+  unsigned int n_edges   = 0;
+  std::vector < double > n_reads;
+  // Edges are actually read twice, but it is ok
+  for (size_t nodeId = 0; nodeId < graph.nodes.size(); ++nodeId) {
+    Node &node = graph.nodes[nodeId];
+	if (node.is_set()) {
+      for (Edge &edge: node.edges) {
+        if (edge.is_set()) {
+          n_reads.push_back(std::log(edge.n_reads));
+        }
+	  }
+	}
+  }
+  double mean = compute_mean(n_reads);
+  double std_dev = compute_std_dev(n_reads, mean);
+  double min_threshold = std::exp(mean - std_dev);
+  double max_threshold = std::exp(mean + std_dev);
+  for (size_t nodeId = 0; nodeId < graph.nodes.size(); ++nodeId) {
+    Node &node = graph.nodes[nodeId];
+	if (node.is_set()) {
+      for (Edge &edge: node.edges) {
+        if (edge.is_set()) {
+          ++n_edges;
+          if ((edge.n_reads <= min_threshold) || (edge.n_reads >= max_threshold)) {
+			edge.unset();
+            ++n_removed;
+		  }
+        }
+	  }
+	}
+  }
+  std::cerr << TAB << "Estimated a normal distribution of (" << std::exp(mean) << ", " << std::exp(std_dev) << ") on log read counts, used " << min_threshold << "--" << max_threshold << " as thresholds, removed " << n_removed << "/" << n_edges << " edges.\n";
 }

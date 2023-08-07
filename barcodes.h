@@ -16,8 +16,9 @@ struct Barcodes {
 
   void          set_structure();
   unsigned int  count_n_reads (unsigned long id);
-  void          trim();
+  void          remove_low_read_counts();
   void          sort();
+  void          remove_low_barcode_counts();
 };
 
 #endif

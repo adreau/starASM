@@ -12,8 +12,8 @@ unsigned int Barcodes::count_n_reads (unsigned long id) {
   return count_different(names);
 }
 
-// Set to zero reads molecules with few reads
-void Barcodes::trim () {
+// Set to zero molecules with few reads
+void Barcodes::remove_low_read_counts () {
   std::cerr << TAB << "Removing outlier barcodes...\n";
   unsigned int cpt = 0;
   for (unsigned i = 0; i < ids.size(); ++i) {
@@ -49,5 +49,5 @@ void Barcodes::set_structure () {
   }
   count_map.clear();
   current_offsets = offsets;
-  reads = std::vector < Read > (offset);
+  reads.resize(offset);
 }

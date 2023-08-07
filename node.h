@@ -12,15 +12,16 @@ struct Edge {
   unsigned int n_reads;
   unsigned int n_min;
   unsigned int n_max;
+  bool         set;
 
-  Edge (size_t n, Link_types l, double j, unsigned int r, unsigned int i, unsigned a): nodeId(n), link_type(l), jaccard(j), n_reads(r), n_min(i), n_max(a) {}
+  Edge (size_t n, Link_types l, double j, unsigned int r, unsigned int i, unsigned a): nodeId(n), link_type(l), jaccard(j), n_reads(r), n_min(i), n_max(a), set(true) {}
 
   void unset () {
-    nodeId = unset_value;
+    set = false;
   }
 
   bool is_set () {
-    return (nodeId != unset_value);
+    return set;
   }
 
   bool operator== (const Edge &edge) {
